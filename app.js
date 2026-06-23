@@ -141,7 +141,7 @@ function initApp() {
     setupBulkDeleteListeners();
 }
 
-// ======================= LOGIKA FITUR BERANDA UTAS ALA THREADS =======================
+// ======================= LOGIKA FITUR BERANDA UTAS LENGKAP ALA THREADS =======================
 function setupSocialInputListener() {
     const btnSubmit = document.getElementById('btn-submit-post');
     if (btnSubmit) {
@@ -164,6 +164,9 @@ function setupSocialInputListener() {
                     username: username,
                     content: textContent,
                     likes: [], 
+                    replies: [], 
+                    isRepost: false,
+                    repostedBy: "",
                     createdAt: today.getTime(),
                     timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
                 });
@@ -207,52 +210,111 @@ function listenToSocialFeed() {
             const likeCount = Array.isArray(thread.likes) ? thread.likes.length : 0;
             const initialChar = thread.username ? thread.username.charAt(1).toUpperCase() : "U";
             const isMyPost = thread.userId === currentUserId;
+            
+            const repliesArray = Array.isArray(thread.replies) ? thread.replies : [];
+            const hasReplies = repliesArray.length > 0;
+
+            // PERBAIKAN: AKTIFKAN TOMBOL HAPUS KOMENTAR KHUSUS BAGI PEMILIK UTAS UTAMA / PENULIS KOMENTAR
+            const repliesHtml = repliesArray.map(rep => {
+                const canDeleteReply = rep.userId === currentUserId || thread.userId === currentUserId;
+                
+                // Amankan objek balasan ke dalam format string aman HTML Atribut onclick
+                const safeReplyObj = JSON.stringify(rep).replace(/"/g, '&quot;');
+
+                return `
+                    <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding-left: 8px;">
+                        <div style="width: 24px; height: 24px; background: #a6a6a6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 9px; flex-shrink: 0;">
+                            ${rep.username.charAt(1).toUpperCase()}
+                        </div>
+                        <div style="flex: 1; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
+                                <span>${rep.username}</span>
+                                <div style="color: var(--text-secondary); font-weight: 400; display: flex; gap: 8px; align-items: center;">
+                                    <span>${rep.timeLabel || ''}</span>
+                                    <button onclick="window.replyToUser('${thread.id}', '${rep.username}')" style="background:none; border:none; color:var(--accent-blue); font-size:11px; cursor:pointer; font-weight:600; padding:0;">Balas</button>
+                                    
+                                    ${canDeleteReply ? `<button onclick="window.deleteReplyComment('${thread.id}', ${safeReplyObj})" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 0 0 4px;">Hapus</button>` : ''}
+                                </div>
+                            </div>
+                            <p style="font-size: 12px; color: var(--text-primary); margin-top: 2px; white-space: pre-wrap;">${rep.content}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const safeContentForAttribute = thread.content
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/\n/g, ' ');
 
             return `
-                <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; position: relative;">
-                    <div style="width: 36px; height: 36px; background: #c7c7cc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 13px; flex-shrink: 0;">
-                        ${initialChar}
-                    </div>
-                    
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 600; font-size: 14px; color: var(--text-primary);">${thread.username}</span>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 11px; color: var(--text-secondary);">${thread.timeLabel || '--:--'}</span>
-                                ${isMyPost ? `<button onclick="window.deleteThreadPost('${thread.id}')" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 4px;">Hapus</button>` : ''}
-                            </div>
+                <div class="card" style="padding: 16px; margin-bottom: 0;">
+                    ${thread.isRepost ? `
+                        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary); font-weight:600; margin-bottom:10px; padding-left:48px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                            <span>${thread.repostedBy} membagikan ulang</span>
                         </div>
-                        <p style="font-size: 14px; line-height: 1.4; color: var(--text-primary); white-space: pre-wrap; margin-top: 2px;">${thread.content}</p>
+                    ` : ''}
+
+                    <div style="display: flex; gap: 12px; align-items: flex-start; position: relative;">
+                        <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; align-self: stretch;">
+                            <div style="width: 36px; height: 36px; background: #c7c7cc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 13px; flex-shrink: 0;">
+                                ${initialChar}
+                            </div>
+                            <div style="width: 2px; flex-grow: 1; background: rgba(0,0,0,0.06); margin-top: 6px; display: ${hasReplies ? 'block' : 'none'}; border-radius: 1px;"></div>
+                        </div>
                         
-                        <div style="display: flex; gap: 18px; margin-top: 12px; align-items: center;">
-                            <button onclick="window.toggleLikeThread('${thread.id}', ${hasLiked})" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; color: ${hasLiked ? 'var(--accent-red)' : 'var(--text-secondary)'}; transition: color 0.15s ease;">
-                                <svg width="19" height="19" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                                </svg>
-                                <span style="font-size: 13px; font-weight: 600;">${likeCount}</span>
-                            </button>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 14px; color: var(--text-primary);">${thread.username}</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 11px; color: var(--text-secondary);">${thread.timeLabel || '--:--'}</span>
+                                    ${isMyPost ? `<button onclick="window.deleteThreadPost('${thread.id}')" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 4px;">Hapus</button>` : ''}
+                                </div>
+                            </div>
+                            <p style="font-size: 14px; line-height: 1.4; color: var(--text-primary); white-space: pre-wrap; margin-top: 2px;">${thread.content}</p>
+                            
+                            <div style="display: flex; gap: 18px; margin-top: 12px; align-items: center;">
+                                <button onclick="window.toggleLikeThread('${thread.id}', ${hasLiked})" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; color: ${hasLiked ? 'var(--accent-red)' : 'var(--text-secondary)'}; transition: color 0.15s ease;">
+                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                    <span style="font-size: 13px; font-weight: 600;">${likeCount}</span>
+                                </button>
 
-                            <button onclick="window.triggerSocialToast('Fitur Balasan akan segera hadir!')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
-                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                                </svg>
-                            </button>
+                                <button onclick="window.toggleReplyBox('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center; gap: 4px;">
+                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                    </svg>
+                                    <span style="font-size: 13px; font-weight: 600;">${repliesArray.length}</span>
+                                </button>
 
-                            <button onclick="window.triggerSocialToast('Utas berhasil dibagikan ulang!')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
-                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="17 1 21 5 17 9"></polyline>
-                                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                                    <polyline points="7 23 3 19 7 15"></polyline>
-                                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                                </svg>
-                            </button>
+                                <button onclick="window.repostThread('${thread.id}', '${thread.username}', '${safeContentForAttribute}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
+                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="17 1 21 5 17 9"></polyline>
+                                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                        <polyline points="7 23 3 19 7 15"></polyline>
+                                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                                    </svg>
+                                </button>
 
-                            <button onclick="window.copyThreadLink('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
-                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                            </button>
+                                <button onclick="window.copyThreadLink('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
+                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div id="reply-box-${thread.id}" style="display: none; margin-top: 14px; gap: 8px; align-items: center;">
+                                <input type="text" id="reply-input-${thread.id}" placeholder="Tulis balasan..." style="flex: 1; padding: 8px 12px; font-size: 13px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); outline: none;">
+                                <button onclick="window.submitReply('${thread.id}')" class="btn-primary" style="padding: 8px 14px; font-size: 12px; margin: 0; width: auto;">Balas</button>
+                            </div>
+
+                            <div id="replies-list-${thread.id}">
+                                ${repliesHtml}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,6 +322,105 @@ function listenToSocialFeed() {
         }).join('');
     });
 }
+
+// BARU: FUNGSI GLOBAL EKSEKUSI MODERASI HAPUS KOMENTAR DI FIRESTORE ARRAY
+window.deleteReplyComment = async (threadId, replyObject) => {
+    const confirmDel = await showCustomConfirm("Hapus komentar ini dari halaman utas?");
+    if (confirmDel) {
+        try {
+            const threadRef = doc(db, "threads", threadId);
+            await updateDoc(threadRef, {
+                replies: arrayRemove(replyObject)
+            });
+            showCustomToast("Komentar berhasil dihapus.");
+        } catch (err) {
+            console.error("Gagal menghapus komentar:", err);
+            showCustomToast("Gagal memoderasi komentar.");
+        }
+    }
+};
+
+window.replyToUser = (threadId, targetUsername) => {
+    const box = document.getElementById(`reply-box-${threadId}`);
+    if (box) box.style.display = 'flex';
+    
+    const input = document.getElementById(`reply-input-${threadId}`);
+    if (input) {
+        input.value = `${targetUsername} `;
+        input.focus();
+    }
+};
+
+window.toggleReplyBox = (id) => {
+    const box = document.getElementById(`reply-box-${id}`);
+    if (box) {
+        box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        if (box.style.display === 'flex') {
+            document.getElementById(`reply-input-${id}`).value = "";
+            document.getElementById(`reply-input-${id}`).focus();
+        }
+    }
+};
+
+window.submitReply = async (id) => {
+    const input = document.getElementById(`reply-input-${id}`);
+    if (!input) return;
+    const contentText = input.value.trim();
+
+    if (!contentText) {
+        showCustomToast("Teks balasan tidak boleh kosong!");
+        return;
+    }
+
+    const myUsername = `@${currentUserEmail.split('@')[0]}`;
+    const today = new Date();
+    const replyObject = {
+        userId: currentUserId,
+        username: myUsername,
+        content: contentText,
+        createdAt: today.getTime(),
+        timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
+    };
+
+    try {
+        const threadRef = doc(db, "threads", id);
+        await updateDoc(threadRef, {
+            replies: arrayUnion(replyObject)
+        });
+        input.value = "";
+        document.getElementById(`reply-box-${id}`).style.display = 'none';
+        showCustomToast("Balasan berhasil dikirim!");
+    } catch (err) {
+        console.error("Gagal mengirim komentar:", err);
+        showCustomToast("Gagal mengirim balasan.");
+    }
+};
+
+window.repostThread = async (id, originalUsername, originalContent) => {
+    const myUsername = `@${currentUserEmail.split('@')[0]}`;
+    const confirmRepost = await showCustomConfirm(`Bagikan ulang utas milik ${originalUsername} ke linimasa Anda?`, false);
+    
+    if (confirmRepost) {
+        const today = new Date();
+        try {
+            await addDoc(collection(db, "threads"), {
+                userId: currentUserId,
+                username: originalUsername, 
+                content: originalContent,
+                likes: [],
+                replies: [],
+                isRepost: true, 
+                repostedBy: myUsername, 
+                createdAt: today.getTime(),
+                timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
+            });
+            showCustomToast("Berhasil membagikan ulang utas!");
+        } catch (err) {
+            console.error("Gagal melakukan repost:", err);
+            showCustomToast("Gagal membagikan ulang.");
+        }
+    }
+};
 
 window.toggleLikeThread = async (id, currentLikedState) => {
     const threadRef = doc(db, "threads", id);
@@ -288,10 +449,6 @@ window.deleteThreadPost = async (id) => {
 window.copyThreadLink = (id) => {
     navigator.clipboard.writeText(`${window.location.origin}#thread-${id}`);
     showCustomToast("Tautan utas berhasil disalin!");
-};
-
-window.triggerSocialToast = (msg) => {
-    showCustomToast(msg);
 };
 // ===========================================================================================
 
@@ -703,6 +860,18 @@ function renderHistoryList(items) {
         container.innerHTML += groupHtml;
     }
 }
+
+window.deleteTx = async (id) => {
+    const confirmDel = await showCustomConfirm("Hapus catatan transaksi ini?");
+    if (confirmDel) { 
+        try {
+            await deleteDoc(doc(db, "transactions", id)); 
+            showCustomToast("Catatan transaksi berhasil dihapus.");
+        } catch (err) {
+            showCustomToast("Gagal menghapus transaksi.");
+        }
+    }
+};
 
 // SCRIPT ATUR URUTAN POSISI KARTU (DRAG & DROP)
 const dragContainer = document.getElementById('drag-grid-container');
