@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Catatan Keuangan</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        const loginTimestamp = localStorage.getItem('login_timestamp');
+        const oneWeek = 7 * 24 * 60 * 60 * 1000; // Rentang waktu 1 minggu dalam milidetik
+
+        if (!loginTimestamp || (Date.now() - parseInt(loginTimestamp) > oneWeek)) {
+            localStorage.removeItem('login_timestamp');
+            window.location.href = 'login.html';
+        }
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <nav class="navigation">
+            <div class="nav-brand">Keuangan</div>
+            <div class="nav-menu">
+                <button class="nav-item active" id="nav-dash">Dashboard</button>
+                <button class="nav-item" id="nav-history">Histori</button>
+            </div>
+            <button id="btn-logout" class="btn-logout">Keluar</button>
+        </nav>
+
+        <main class="main-content">
+            
+            <section id="pane-dash" class="tab-pane active">
+                <div class="balance-card">
+                    <span class="card-label">Sisa Anggaran Bulan Ini (Gajian - Pengeluaran)</span>
+                    <h1 id="total-monthly">Rp 0</h1>
+                    <div class="salary-info-sub" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+                        Total Uang Masuk: <span id="label-salary-amount">Rp 0</span> (Gajian setiap tanggal <span id="label-salary-date">-</span>)
+                    </div>
+                </div>
+
+                <div class="card hero-card">
+                    <h3>Analitik Kategori</h3>
+                    <div class="hero-chart-layout">
+                        <div class="chart-container">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                        <div id="analytics-list" class="analytics-container">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid" id="drag-grid-container">
+                    
+                    <div class="card draggable-card" draggable="true">
+                        <h3>Atur Gajian Bulanan</h3>
+                        <form id="salary-form">
+                            <div class="input-group">
+                                <label>Nominal Uang Gajian (Rp)</label>
+                                <input type="text" id="input-gajian" placeholder="Contoh: 5.000.000" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Tanggal Gajian Setiap Bulan</label>
+                                <select id="input-tgl-gajian" required>
+                                    <script>
+                                        for(let i=1; i<=31; i++) {
+                                            document.write(`<option value="${i}">${i}</option>`);
+                                        }
+                                    </script>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary" style="background-color: #34c759;">Simpan Aturan Gajian</button>
+                        </form>
+                    </div>
+
+                    <div class="card draggable-card" draggable="true">
+                        <h3>Catat Transaksi</h3>
+                        <form id="transaction-form">
+                            <div class="input-group">
+                                <label>Nominal Pengeluaran (Rp)</label>
+                                <input type="text" id="input-nominal" placeholder="Contoh: 50.000" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Kategori</label>
+                                <select id="input-category" required>
+                                    </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Catatan (Opsional)</label>
+                                <input type="text" id="input-note" placeholder="Beli ayam, bensin, dll">
+                            </div>
+                            <button type="submit" class="btn-primary">Simpan Pengeluaran</button>
+                        </form>
+                    </div>
+
+                    <div class="card draggable-card" draggable="true">
+                        <h3>Kelola Kategori</h3>
+                        <form id="category-form" style="margin-bottom: 15px; flex-grow: 0;">
+                            <div class="input-group">
+                                <label>Tambah Kategori Baru</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="input-new-category" placeholder="Contoh: Tabungan" required style="flex: 1;">
+                                    <button type="submit" class="btn-primary" style="width: auto; padding: 0 15px; margin: 0;">+</button>
+                                </div>
+                            </div>
+                        </form>
+                        <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Daftar Kategori Aktif:</label>
+                        <div id="category-manage-list">
+                            </div>
+                    </div>
+                    
+                </div>
+            </section>
+
+            <section id="pane-history" class="tab-pane">
+                <div class="history-filter-bar">
+                    <h3>Histori Pengeluaran</h3>
+                    <div class="filters">
+                        <select id="filter-year"></select>
+                        <select id="filter-month">
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="history-list"></div>
+            </section>
+            
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

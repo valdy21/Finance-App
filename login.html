@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk - Catatan Keuangan</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Mengunci body agar menjadi jangkar titik tengah layar penuh */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Pembungkus utama untuk memastikan kartu login berada tepat di tengah-tengah */
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100vh;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .login-card {
+            max-width: 380px;
+            width: 100%;
+            padding: 36px 24px; /* Disesuaikan agar pas dengan tambahan deskripsi */
+            text-align: center;
+        }
+
+        .login-card form {
+            text-align: left;
+        }
+
+        .brand-icon {
+            font-size: 38px;
+            color: var(--accent-blue);
+            margin-bottom: 6px; /* Jarak rapat ke deskripsi di bawahnya */
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+
+        .brand-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 28px; /* Jarak tegas sebelum masuk ke form input */
+            font-weight: 500;
+            letter-spacing: -0.01em;
+        }
+
+        /* Mengikuti aturan hemat space, hanya muncul jika terjadi error */
+        .error-message {
+            display: none;
+            color: var(--accent-red);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        
+        <div class="card login-card">
+            <div class="brand-icon">Finance App</div>
+            <div class="brand-description">Kelola anggaran dan pengeluaran harian Anda</div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Alamat Email</label>
+                    <input type="email" id="login-email" placeholder="nama@email.com" required style="cursor: text;">
+                </div>
+                
+                <div class="input-group" style="margin-top: 16px; margin-bottom: 20px;">
+                    <label>Kata Sandi</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required style="cursor: text;">
+                </div>
+
+                <div id="auth-error" class="error-message"></div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 15px; margin-top: 0;">
+                    Masuk Sekarang
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { auth } from './auth.js';
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const loginForm = document.getElementById('login-form');
+        const errorText = document.getElementById('auth-error');
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Sembunyikan dan bersihkan pesan error setiap kali form dikirim ulang
+                if (errorText) {
+                    errorText.style.display = "none";
+                    errorText.innerText = ""; 
+                }
+                
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    localStorage.setItem('login_timestamp', Date.now().toString());
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error.code, error.message);
+                    
+                    let message = "Gagal masuk. Periksa konfigurasi proyek Anda.";
+                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        message = "Email atau kata sandi salah.";
+                    } else if (error.code === 'auth/invalid-email') {
+                        message = "Format penulisan email tidak valid.";
+                    } else if (error.code === 'auth/network-request-failed') {
+                        message = "Koneksi gagal. Periksa internet Anda.";
+                    }
+
+                    // Tampilkan pesan error dan buka space layout secara halus
+                    if (errorText) {
+                        errorText.innerText = message;
+                        errorText.style.display = "block";
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

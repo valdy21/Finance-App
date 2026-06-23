@@ -1,0 +1,404 @@
+:root {
+    --bg-main: #f5f5f7;
+    --bg-card: rgba(255, 255, 255, 0.8); /* Transparansi disempurnakan */
+    --text-primary: #1d1d1f;
+    --text-secondary: #86868b;
+    --accent-blue: #0071e3;
+    --accent-green: #34c759;
+    --accent-red: #ff3b30;
+    --border-color: rgba(0, 0, 0, 0.05); /* Lebih tipis dan samar */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    
+    /* Font Resmi iPhone (San Francisco) */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    
+    /* Optimasi Teks Tajam khas iOS / Retina Display */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.015em; /* Tipografi Apple sedikit lebih rapat */
+}
+
+body {
+    background: linear-gradient(135deg, #e5e5ea 0%, #f5f5f7 100%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* CONTAINER UTAMA (Efek Glassmorphism Premium) */
+.app-container {
+    width: 100%;
+    max-width: 1140px; /* Dipersempit sedikit agar layout di laptop lebih padat & rapi */
+    padding: 32px 24px; /* Menggunakan standar kelipatan 8px */
+    margin: 32px auto;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.4); 
+    backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* Navigation Bar */
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 16px 24px;
+    border-radius: 16px;
+    margin-bottom: 32px; /* Jarak tegas antar bagian besar */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    width: 100%;
+}
+
+.nav-brand {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 8px; /* Celah rapat antar tombol menu tab */
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.nav-item.active {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.btn-logout {
+    background: none;
+    border: 1px solid var(--accent-red);
+    color: var(--accent-red);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+    background: rgba(255, 59, 48, 0.08);
+}
+
+/* Balance Card (Dompet / Ringkasan) */
+.balance-card {
+    background: var(--bg-card); 
+    color: var(--text-primary); 
+    padding: 28px 24px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); 
+    width: 100%;
+}
+
+.card-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.balance-card h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-top: 6px;
+    letter-spacing: -0.04em; /* Khas nominal besar di iOS */
+}
+
+/* Hero Container (Analitik Kategori) */
+.hero-card {
+    width: 100%;
+    margin-bottom: 32px;
+}
+
+.hero-chart-layout {
+    display: flex;
+    flex-direction: column; 
+    gap: 32px; /* Jarak lega antara diagram dan teks penjelasan */
+    width: 100%;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 200px;
+}
+
+.analytics-container {
+    width: 100%;
+}
+
+/* Grid Bagian Bawah */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px; /* Jarak horizontal & vertikal antar kartu form seimbang */
+    width: 100%;
+}
+
+/* Kartu Standar */
+.card {
+    background: var(--bg-card);
+    padding: 24px; /* Padding ditingkatkan agar konten di dalamnya bernapas */
+    border-radius: 20px; /* Sudut lengkungan iOS yang ikonik */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    width: 100%;
+    align-self: start; 
+    position: relative;
+}
+
+.draggable-card {
+    cursor: grab;
+}
+
+.draggable-card:active {
+    cursor: grabbing;
+}
+
+.draggable-card.dragging {
+    opacity: 0.2;
+    transform: scale(0.97);
+    border: 2px dashed var(--accent-blue);
+}
+
+.card h3 {
+    margin-bottom: 20px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+/* Forms & Inputs */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Jarak antar baris input form */
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Jarak antara label teks kecil ke kolom input */
+}
+
+.input-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+input, select {
+    padding: 14px 16px; /* Bidang ketukan lebih tinggi (Apple Touch Target Standard) */
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px; /* Lebih bulat halus */
+    font-size: 15px;
+    background: rgba(0, 0, 0, 0.03);
+    outline: none;
+    width: 100%;
+    transition: all 0.2s ease;
+    cursor: text;
+}
+
+select {
+    cursor: pointer;
+}
+
+input:focus, select:focus {
+    border-color: var(--accent-blue);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12); /* Fokus halus lingkaran luar */
+}
+
+.btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 4px; /* Tambahan sedikit ruang di atas tombol */
+    transition: opacity 0.15s ease;
+}
+
+.btn-primary:hover {
+    opacity: 0.95;
+}
+
+#category-manage-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+
+/* Progress Bars */
+.analytics-item {
+    margin-bottom: 16px;
+}
+
+.analytics-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.progress-bar {
+    background: rgba(0, 0, 0, 0.04);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: var(--accent-blue);
+    height: 100%;
+    border-radius: 4px;
+}
+
+/* Tabs */
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* History Tab View */
+.history-filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+.filters {
+    display: flex;
+    gap: 12px;
+}
+
+.filters select {
+    width: auto;
+    padding: 10px 16px;
+}
+
+.day-group {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.01);
+    width: 100%;
+}
+
+.day-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.item-info p {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.item-info span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.item-amount {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.item-amount span {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.btn-delete {
+    background: none;
+    border: none;
+    color: var(--accent-red);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* RESPONSIVE LAYOUT UNTUK LAPTOP */
+@media (min-width: 840px) {
+    .hero-chart-layout {
+        flex-direction: row;
+        align-items: center;
+        gap: 40px; /* Celah ekstra lebar antara bagan dan teks di laptop */
+    }
+    .chart-container {
+        width: 33%;
+        height: 220px;
+    }
+    .analytics-container {
+        width: 67%;
+    }
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+}
