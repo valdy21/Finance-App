@@ -6,6 +6,7 @@
     <title>Dashboard - Catatan Keuangan</title>
     <link rel="stylesheet" href="style.css">
 
+    <!-- Proteksi Instan: Cek aturan login 1 minggu sebelum layar sempat dimuat -->
     <script>
         const loginTimestamp = localStorage.getItem('login_timestamp');
         const oneWeek = 7 * 24 * 60 * 60 * 1000; // Rentang waktu 1 minggu dalam milidetik
@@ -16,10 +17,12 @@
         }
     </script>
     
+    <!-- Library Chart.js untuk menggambar diagram lingkaran -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
+        <!-- NAVIGATION BAR: Menu Berjejer 1 Baris Aman Dari Offset di HP -->
         <nav class="navigation">
             <div class="nav-brand">Keuangan</div>
             <div class="nav-menu">
@@ -29,10 +32,13 @@
             <button id="btn-logout" class="btn-logout">Keluar</button>
         </nav>
 
+        <!-- KONTEN UTAMA APLIKASI -->
         <main class="main-content">
             
+            <!-- ================= TAB 1: DASHBOARD & INPUT ================= -->
             <section id="pane-dash" class="tab-pane active">
                 
+                <!-- Kartu Sisa Anggaran Bulanan (Gaya Premium Fintech Rata Tengah) -->
                 <div class="balance-card">
                     <span class="card-label">Sisa Anggaran Bulan Ini</span>
                     <h1 id="total-monthly">Rp 0</h1>
@@ -41,19 +47,25 @@
                     </p>
                 </div>
 
+                <!-- HERO CONTAINER: Analitik Kategori Membentang Penuh -->
                 <div class="card hero-card">
                     <h3>Analitik Kategori</h3>
                     <div class="hero-chart-layout">
+                        <!-- Sisi Kiri: Tempat Diagram Lingkaran -->
                         <div class="chart-container">
                             <canvas id="expenseChart"></canvas>
                         </div>
+                        <!-- Sisi Kanan: Daftar Progress Bar Kategori -->
                         <div id="analytics-list" class="analytics-container">
-                            </div>
+                            <!-- Baris teks analitik kemajuan diisi oleh app.js -->
+                        </div>
                     </div>
                 </div>
 
+                <!-- GRID BAWAH: Tempat 3 Formulir Input Saling Berjejer Seimbang (Bisa di-drag) -->
                 <div class="dashboard-grid" id="drag-grid-container">
                     
+                    <!-- Form 1: Pengaturan Uang Gajian Bulanan -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Atur Gajian Bulanan</h3>
                         <form id="salary-form">
@@ -76,6 +88,7 @@
                         </form>
                     </div>
 
+                    <!-- Form 2: Catat Transaksi Belanja/Pengeluaran -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Catat Transaksi</h3>
                         <form id="transaction-form">
@@ -86,7 +99,8 @@
                             <div class="input-group">
                                 <label>Kategori</label>
                                 <select id="input-category" required>
-                                    </select>
+                                    <!-- Diisi dinamis oleh JavaScript -->
+                                </select>
                             </div>
                             <div class="input-group">
                                 <label>Catatan (Opsional)</label>
@@ -96,6 +110,7 @@
                         </form>
                     </div>
 
+                    <!-- Form 3: Kelola Kategori Mandiri -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Kelola Kategori</h3>
                         <form id="category-form" style="margin-bottom: 15px; flex-grow: 0;">
@@ -114,6 +129,7 @@
                 </div>
             </section>
 
+            <!-- ================= TAB 2: HISTORI LENGKAP ================= -->
             <section id="pane-history" class="tab-pane">
                 <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -137,6 +153,7 @@
                         </div>
                     </div>
 
+                    <!-- Panel Tombol Hapus Massal Berjejer Rapi Satu Baris -->
                     <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; scrollbar-width: none;">
                         <button type="button" id="btn-clear-day" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Hari Ini</button>
                         <button type="button" id="btn-clear-month" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Bulan Ini</button>
@@ -150,6 +167,7 @@
         </main>
     </div>
 
+    <!-- STRUKTUR POPUP MODAL KONFIRMASI KUSTOM -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <p id="modal-message">Apakah Anda yakin?</p>
@@ -159,6 +177,9 @@
             </div>
         </div>
     </div>
+
+    <!-- STRUKTUR WADAH UNTUK NOTIFIKASI TOAST MELAYANG -->
+    <div id="custom-toast-container" class="toast-container"></div>
 
     <script type="module" src="app.js"></script>
 </body>
