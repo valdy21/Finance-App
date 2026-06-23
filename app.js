@@ -20,7 +20,7 @@ let currentUserEmail = "";
 let userSalaryConfig = { amount: 0, date: 1 };
 let expenseChartInstance = null;
 let activeCategories = [];
-let attachedMediaBase64 = ""; // BARU: Menyimpan string teks foto hasil kompresi Base64
+let attachedMediaBase64 = ""; // Menyimpan string teks foto hasil kompresi Base64
 
 // LOGIKA PROMISE JEMBATAN POPUP MODAL KUSTOM
 function showCustomConfirm(message, isDestructive = true) {
@@ -146,7 +146,7 @@ function initApp() {
 
 // ======================= LOGIKA FITUR BERANDA UTAS INTEGRASI BASE64 GRATIS =======================
 
-// ALTERNATIF A: Mengompresi Gambar Menggunakan Canvas & Mengekspornya Menjadi String Teks Base64 Kecil
+// Mengompresi Gambar Menggunakan Canvas & Mengekspornya Menjadi String Teks Base64 Kecil
 function processAndCompressImageToBase64(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -159,7 +159,6 @@ function processAndCompressImageToBase64(file) {
                 let width = img.width;
                 let height = img.height;
 
-                // Batasi resolusi maksimal lebar/tinggi gambar di ukuran optimal 800px untuk menghemat teks database
                 const max_size = 800;
                 if (width > height) {
                     if (width > max_size) {
@@ -178,7 +177,6 @@ function processAndCompressImageToBase64(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Kompresi kualitas gambar diturunkan ke skala ultra-ringan 0.6 (menghasilkan file ~30KB-60KB)
                 const base64String = canvas.toDataURL('image/jpeg', 0.6);
                 resolve(base64String);
             };
@@ -197,7 +195,6 @@ function setupMediaAttachmentListeners() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Batasi fungsionalitas Video karena keterbatasan limit teks database Firestore (Max 1MB dokumen)
         if (file.type.startsWith('video/')) {
             showCustomToast("Untuk menjaga database tetap gratis tanpa storage, fitur saat ini hanya mendukung lampiran foto.");
             clearSelectedMedia();
@@ -205,8 +202,6 @@ function setupMediaAttachmentListeners() {
         }
 
         statusLabel.innerText = "Memproses gambar...";
-        
-        // Kompresi instan menjadi Base64 string di sisi pengguna
         attachedMediaBase64 = await processAndCompressImageToBase64(file);
 
         previewContainer.innerHTML = "";
@@ -256,7 +251,6 @@ function setupSocialInputListener() {
             const today = new Date();
 
             try {
-                // Menyimpan mediaUrl berupa teks data URL Base64 murni langsung ke Firestore Database (100% GRATIS)
                 await addDoc(collection(db, "threads"), {
                     userId: currentUserId,
                     username: username,
@@ -318,12 +312,14 @@ function listenToSocialFeed() {
             const repliesArray = Array.isArray(thread.replies) ? thread.replies : [];
             const hasReplies = repliesArray.length > 0;
 
-            const repliesHtml = repliesArray.map(rep => {
+            // URUTAN BARU: .slice().reverse() membalik posisi komentar utama (terbaru di atas) tanpa merusak struktur array asli
+            const repliesHtml = repliesArray.slice().reverse().map(rep => {
                 const canDeleteReply = rep.userId === currentUserId || thread.userId === currentUserId;
                 const safeReplyObj = JSON.stringify(rep).replace(/"/g, '&quot;');
                 
                 const subRepliesArray = Array.isArray(rep.subReplies) ? rep.subReplies : [];
-                const subRepliesHtml = subRepliesArray.map(sub => {
+                // URUTAN BARU: .slice().reverse() membalik posisi balasan komentar tingkat 2 (terbaru di atas)
+                const subRepliesHtml = subRepliesArray.slice().reverse().map(sub => {
                     const canDeleteSub = sub.userId === currentUserId || thread.userId === currentUserId;
                     const safeSubObj = JSON.stringify(sub).replace(/"/g, '&quot;');
                     return `
@@ -417,7 +413,6 @@ function listenToSocialFeed() {
                             ${mediaHtml}
 
                             <div style="display: flex; gap: 18px; margin-top: 12px; align-items: center;">
-                                <!-- IKON LIKE -->
                                 <button onclick="window.toggleLikeThread('${thread.id}', ${hasLiked})" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; color: ${hasLiked ? 'var(--accent-red)' : 'var(--text-secondary)'}; transition: color 0.15s ease;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -425,7 +420,6 @@ function listenToSocialFeed() {
                                     <span style="font-size: 13px; font-weight: 600;">${likeCount}</span>
                                 </button>
 
-                                <!-- IKON BALASAN -->
                                 <button onclick="window.toggleReplyBox('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center; gap: 4px;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
@@ -433,7 +427,6 @@ function listenToSocialFeed() {
                                     <span style="font-size: 13px; font-weight: 600;">${repliesArray.length}</span>
                                 </button>
 
-                                <!-- IKON REPOST -->
                                 <button onclick="window.repostThread('${thread.id}', '${thread.username}', '${safeContentForAttribute}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="17 1 21 5 17 9"></polyline>
@@ -443,7 +436,6 @@ function listenToSocialFeed() {
                                     </svg>
                                 </button>
 
-                                <!-- IKON SALIN TAUTAN -->
                                 <button onclick="window.copyThreadLink('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -478,7 +470,6 @@ window.toggleSubReplyBox = (threadId, replyId) => {
     }
 };
 
-// PERBAIKAN BUG UTAMA: Menjamin sub-replies masuk ke objek array yang tepat dan langsung memicu pembaruan halaman secara instan
 window.submitSubReply = async (threadId, replyId) => {
     const input = document.getElementById(`sub-reply-input-${replyId}`);
     if (!input) return;
@@ -502,7 +493,6 @@ window.submitSubReply = async (threadId, replyId) => {
             }
         });
 
-        // Iterasi dan temukan objek komentar utama berdasarkan replyId secara presisi
         const updatedReplies = currentReplies.map(rep => {
             if (rep.replyId === replyId) {
                 const subArray = Array.isArray(rep.subReplies) ? rep.subReplies : [];
@@ -519,7 +509,6 @@ window.submitSubReply = async (threadId, replyId) => {
             return rep;
         });
 
-        // Tembak pembaruan data balik ke Firestore database untuk memicu onSnapshot rendering
         await updateDoc(doc(db, "threads", threadId), { replies: updatedReplies });
         input.value = "";
         document.getElementById(`sub-reply-box-${replyId}`).style.display = 'none';
@@ -659,7 +648,7 @@ window.toggleLikeThread = async (id, currentLikedState) => {
 window.deleteThreadPost = async (id) => {
     if (await showCustomConfirm("Hapus postingan utas Anda ini?")) {
         try {
-            await deleteDoc(doc(db, "threads", id));
+            await deleteDoc(doc(doc(db, "threads", id)));
             showCustomToast("Utas berhasil dihapus.");
         } catch (err) {
             showCustomToast("Gagal menghapus postingan.");
@@ -971,7 +960,7 @@ function listenToSalaryAndTransactions() {
     });
 }
 
-// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN (Activity Rings Style)
+// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN
 function renderAnalytics(totals, grandTotal) {
     const container = document.getElementById('analytics-list');
     if (!container) return;
