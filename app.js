@@ -429,11 +429,17 @@ function listenToSalaryAndTransactions() {
     });
 }
 
-// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN (Chart.js)
+// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN (Diperbarui: Ditambahkan Total Rupiah)
 function renderAnalytics(totals, grandTotal) {
     const container = document.getElementById('analytics-list');
     if (!container) return;
     container.innerHTML = "";
+    
+    // MENYUNTIKKAN NILAI RUPIAH DI BAWAH LIST ANALITIK SECARA REAL-TIME
+    const grandTotalEl = document.getElementById('analytics-grand-total');
+    if (grandTotalEl) {
+        grandTotalEl.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    }
     
     const ctx = document.getElementById('expenseChart');
 
@@ -448,6 +454,8 @@ function renderAnalytics(totals, grandTotal) {
 
     const categories = Object.keys(totals);
     const nominals = Object.values(totals);
+    
+    // Warna Apple Watch Style (Sudut Melengkung & Spasi Angin)
     const colors = ['#ff9500', '#ff2d55', '#5ac8fa', '#5856d6', '#34c759', '#ffcc00', '#8e8e93'];
 
     if (expenseChartInstance) {
@@ -462,7 +470,10 @@ function renderAnalytics(totals, grandTotal) {
                 datasets: [{
                     data: nominals,
                     backgroundColor: colors.slice(0, categories.length),
-                    borderWidth: 0
+                    borderWidth: 0,
+                    borderRadius: 16, // Sudut ring melengkung halus
+                    spacing: 6,       // Jarak udara estetik antar ring
+                    cutout: '75%'     // Ketebalan ring proporsional
                 }]
             },
             options: {
@@ -471,7 +482,12 @@ function renderAnalytics(totals, grandTotal) {
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: { boxWidth: 12, font: { size: 12 } }
+                        labels: { 
+                            boxWidth: 8, 
+                            usePointStyle: true, // Mengubah kotak legenda menjadi titik bulat
+                            pointStyle: 'circle',
+                            font: { size: 12, weight: '500' } 
+                        }
                     }
                 }
             }
