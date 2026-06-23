@@ -2,7 +2,7 @@ import { auth } from './auth.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Konfigurasi Firebase Proyek Anda
+// Konfigurasi Firebase Proyek Anda (Firebase Storage resmi dinonaktifkan dari backend script)
 const firebaseConfig = {
   apiKey: "AIzaSyDLW7h2_pYK5eRA-Fy9aeQzF5t01UdZXjU",
   authDomain: "keuangan-app-f2c87.firebaseapp.com",
@@ -14,11 +14,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
 let currentUserId = "";
 let currentUserEmail = "";
 let userSalaryConfig = { amount: 0, date: 1 };
 let expenseChartInstance = null;
 let activeCategories = [];
+let attachedMediaBase64 = ""; // BARU: Menyimpan string teks foto hasil kompresi Base64
 
 // LOGIKA PROMISE JEMBATAN POPUP MODAL KUSTOM
 function showCustomConfirm(message, isDestructive = true) {
@@ -135,13 +137,105 @@ function initApp() {
     listenToSalaryAndTransactions();
     listenToSocialFeed(); 
     setupSocialInputListener(); 
+    setupMediaAttachmentListeners(); 
     const filterMonth = document.getElementById('filter-month');
     if (filterMonth) filterMonth.addEventListener('change', listenToSalaryAndTransactions);
     if (filterYear) filterYear.addEventListener('change', listenToSalaryAndTransactions);
     setupBulkDeleteListeners();
 }
 
-// ======================= LOGIKA FITUR BERANDA UTAS LENGKAP ALA THREADS =======================
+// ======================= LOGIKA FITUR BERANDA UTAS INTEGRASI BASE64 GRATIS =======================
+
+// ALTERNATIF A: Mengompresi Gambar Menggunakan Canvas & Mengekspornya Menjadi String Teks Base64 Kecil
+function processAndCompressImageToBase64(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Batasi resolusi maksimal lebar/tinggi gambar di ukuran optimal 800px untuk menghemat teks database
+                const max_size = 800;
+                if (width > height) {
+                    if (width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    }
+                } else {
+                    if (height > max_size) {
+                        width *= max_size / height;
+                        height = max_size;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Kompresi kualitas gambar diturunkan ke skala ultra-ringan 0.6 (menghasilkan file ~30KB-60KB)
+                const base64String = canvas.toDataURL('image/jpeg', 0.6);
+                resolve(base64String);
+            };
+        };
+    });
+}
+
+function setupMediaAttachmentListeners() {
+    const fileInput = document.getElementById('input-post-media');
+    const previewContainer = document.getElementById('media-preview-container');
+    const statusLabel = document.getElementById('label-media-status');
+
+    if (!fileInput || !previewContainer) return;
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Batasi fungsionalitas Video karena keterbatasan limit teks database Firestore (Max 1MB dokumen)
+        if (file.type.startsWith('video/')) {
+            showCustomToast("Untuk menjaga database tetap gratis tanpa storage, fitur saat ini hanya mendukung lampiran foto.");
+            clearSelectedMedia();
+            return;
+        }
+
+        statusLabel.innerText = "Memproses gambar...";
+        
+        // Kompresi instan menjadi Base64 string di sisi pengguna
+        attachedMediaBase64 = await processAndCompressImageToBase64(file);
+
+        previewContainer.innerHTML = "";
+        previewContainer.style.display = "block";
+        statusLabel.innerText = "Foto siap diunggah secara gratis";
+
+        previewContainer.innerHTML = `
+            <img src="${attachedMediaBase64}" style="max-width: 240px; max-height: 160px; object-fit: cover; display: block;">
+            <button type="button" id="btn-remove-media" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; font-weight: bold; line-height: 22px; padding: 0; text-align: center;">X</button>
+        `;
+
+        document.getElementById('btn-remove-media')?.addEventListener('click', clearSelectedMedia);
+    });
+}
+
+function clearSelectedMedia() {
+    attachedMediaBase64 = "";
+    const fileInput = document.getElementById('input-post-media');
+    const previewContainer = document.getElementById('media-preview-container');
+    const statusLabel = document.getElementById('label-media-status');
+    
+    if (fileInput) fileInput.value = "";
+    if (previewContainer) {
+        previewContainer.innerHTML = "";
+        previewContainer.style.display = "none";
+    }
+    if (statusLabel) statusLabel.innerText = "";
+}
+
 function setupSocialInputListener() {
     const btnSubmit = document.getElementById('btn-submit-post');
     if (btnSubmit) {
@@ -150,15 +244,19 @@ function setupSocialInputListener() {
             if (!textarea) return;
             const textContent = textarea.value.trim();
 
-            if (!textContent) {
-                showCustomToast("Teks postingan tidak boleh kosong!");
+            if (!textContent && !attachedMediaBase64) {
+                showCustomToast("Teks atau lampiran foto tidak boleh kosong!");
                 return;
             }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Mengirim...";
 
             const username = `@${currentUserEmail.split('@')[0]}`;
             const today = new Date();
 
             try {
+                // Menyimpan mediaUrl berupa teks data URL Base64 murni langsung ke Firestore Database (100% GRATIS)
                 await addDoc(collection(db, "threads"), {
                     userId: currentUserId,
                     username: username,
@@ -167,14 +265,20 @@ function setupSocialInputListener() {
                     replies: [], 
                     isRepost: false,
                     repostedBy: "",
+                    mediaUrl: attachedMediaBase64,
+                    mediaType: attachedMediaBase64 ? 'image' : '',
                     createdAt: today.getTime(),
                     timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
                 });
                 textarea.value = "";
+                clearSelectedMedia();
                 showCustomToast("Utas berhasil dibagikan!");
             } catch (err) {
                 console.error("Gagal membagikan utas:", err);
                 showCustomToast("Gagal membagikan postingan.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Bagikan";
             }
         });
     }
@@ -214,29 +318,59 @@ function listenToSocialFeed() {
             const repliesArray = Array.isArray(thread.replies) ? thread.replies : [];
             const hasReplies = repliesArray.length > 0;
 
-            // PERBAIKAN: AKTIFKAN TOMBOL HAPUS KOMENTAR KHUSUS BAGI PEMILIK UTAS UTAMA / PENULIS KOMENTAR
             const repliesHtml = repliesArray.map(rep => {
                 const canDeleteReply = rep.userId === currentUserId || thread.userId === currentUserId;
-                
-                // Amankan objek balasan ke dalam format string aman HTML Atribut onclick
                 const safeReplyObj = JSON.stringify(rep).replace(/"/g, '&quot;');
+                
+                const subRepliesArray = Array.isArray(rep.subReplies) ? rep.subReplies : [];
+                const subRepliesHtml = subRepliesArray.map(sub => {
+                    const canDeleteSub = sub.userId === currentUserId || thread.userId === currentUserId;
+                    const safeSubObj = JSON.stringify(sub).replace(/"/g, '&quot;');
+                    return `
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; padding-left: 20px; border-left: 1px dashed rgba(0,0,0,0.04);">
+                            <div style="width: 20px; height: 20px; background: #c3c3c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 8px; flex-shrink: 0;">
+                                ${sub.username.charAt(1).toUpperCase()}
+                            </div>
+                            <div style="flex: 1; background: rgba(0,0,0,0.01); padding: 6px 10px; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
+                                    <span>${sub.username}</span>
+                                    <div style="color: var(--text-secondary); font-weight: 400; display: flex; gap: 6px;">
+                                        <span>${sub.timeLabel || ''}</span>
+                                        ${canDeleteSub ? `<button onclick="window.deleteSubComment('${thread.id}', '${rep.replyId}', ${safeSubObj})" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0;">Hapus</button>` : ''}
+                                    </div>
+                                </div>
+                                <p style="font-size: 12px; color: var(--text-primary); margin-top: 1px; white-space: pre-wrap;">${sub.content}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
 
                 return `
-                    <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding-left: 8px;">
-                        <div style="width: 24px; height: 24px; background: #a6a6a6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 9px; flex-shrink: 0;">
-                            ${rep.username.charAt(1).toUpperCase()}
-                        </div>
-                        <div style="flex: 1; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 10px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
-                                <span>${rep.username}</span>
-                                <div style="color: var(--text-secondary); font-weight: 400; display: flex; gap: 8px; align-items: center;">
-                                    <span>${rep.timeLabel || ''}</span>
-                                    <button onclick="window.replyToUser('${thread.id}', '${rep.username}')" style="background:none; border:none; color:var(--accent-blue); font-size:11px; cursor:pointer; font-weight:600; padding:0;">Balas</button>
-                                    
-                                    ${canDeleteReply ? `<button onclick="window.deleteReplyComment('${thread.id}', ${safeReplyObj})" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 0 0 4px;">Hapus</button>` : ''}
-                                </div>
+                    <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding-left: 8px; flex-direction: column;">
+                        <div style="display: flex; gap: 10px; align-items: flex-start; width: 100%;">
+                            <div style="width: 24px; height: 24px; background: #a6a6a6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 9px; flex-shrink: 0;">
+                                ${rep.username.charAt(1).toUpperCase()}
                             </div>
-                            <p style="font-size: 12px; color: var(--text-primary); margin-top: 2px; white-space: pre-wrap;">${rep.content}</p>
+                            <div style="flex: 1; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 10px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
+                                    <span>${rep.username}</span>
+                                    <div style="color: var(--text-secondary); font-weight: 400; display: flex; gap: 8px; align-items: center;">
+                                        <span>${rep.timeLabel || ''}</span>
+                                        <button onclick="window.toggleSubReplyBox('${thread.id}', '${rep.replyId}')" style="background:none; border:none; color:var(--accent-blue); font-size:11px; cursor:pointer; font-weight:600; padding:0;">Balas</button>
+                                        ${canDeleteReply ? `<button onclick="window.deleteReplyComment('${thread.id}', ${safeReplyObj})" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 0 0 4px;">Hapus</button>` : ''}
+                                    </div>
+                                </div>
+                                <p style="font-size: 12px; color: var(--text-primary); margin-top: 2px; white-space: pre-wrap;">${rep.content}</p>
+                            </div>
+                        </div>
+
+                        <div id="sub-reply-box-${rep.replyId}" style="display: none; width: 100%; padding-left: 34px; gap: 8px; align-items: center; margin-top: 4px;">
+                            <input type="text" id="sub-reply-input-${rep.replyId}" placeholder="Balas komentar @${rep.username.split('@')[0]}..." style="flex: 1; padding: 6px 10px; font-size: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); outline: none;">
+                            <button onclick="window.submitSubReply('${thread.id}', '${rep.replyId}')" class="btn-primary" style="padding: 6px 12px; font-size: 11px; margin: 0; width: auto;">Kirim</button>
+                        </div>
+
+                        <div style="width: 100%; padding-left: 24px;">
+                            ${subRepliesHtml}
                         </div>
                     </div>
                 `;
@@ -247,6 +381,11 @@ function listenToSocialFeed() {
                 .replace(/'/g, "\\'")
                 .replace(/"/g, '&quot;')
                 .replace(/\n/g, ' ');
+
+            let mediaHtml = "";
+            if (thread.mediaUrl && thread.mediaType === 'image') {
+                mediaHtml = `<div style="margin-top: 8px; border-radius: 12px; overflow: hidden; max-width: 100%; border: 1px solid rgba(0,0,0,0.03);"><img src="${thread.mediaUrl}" style="max-height: 280px; width: auto; max-width: 100%; display: block; object-fit: cover;"></div>`;
+            }
 
             return `
                 <div class="card" style="padding: 16px; margin-bottom: 0;">
@@ -275,7 +414,10 @@ function listenToSocialFeed() {
                             </div>
                             <p style="font-size: 14px; line-height: 1.4; color: var(--text-primary); white-space: pre-wrap; margin-top: 2px;">${thread.content}</p>
                             
+                            ${mediaHtml}
+
                             <div style="display: flex; gap: 18px; margin-top: 12px; align-items: center;">
+                                <!-- IKON LIKE -->
                                 <button onclick="window.toggleLikeThread('${thread.id}', ${hasLiked})" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; color: ${hasLiked ? 'var(--accent-red)' : 'var(--text-secondary)'}; transition: color 0.15s ease;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -283,6 +425,7 @@ function listenToSocialFeed() {
                                     <span style="font-size: 13px; font-weight: 600;">${likeCount}</span>
                                 </button>
 
+                                <!-- IKON BALASAN -->
                                 <button onclick="window.toggleReplyBox('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center; gap: 4px;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
@@ -290,6 +433,7 @@ function listenToSocialFeed() {
                                     <span style="font-size: 13px; font-weight: 600;">${repliesArray.length}</span>
                                 </button>
 
+                                <!-- IKON REPOST -->
                                 <button onclick="window.repostThread('${thread.id}', '${thread.username}', '${safeContentForAttribute}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="17 1 21 5 17 9"></polyline>
@@ -299,6 +443,7 @@ function listenToSocialFeed() {
                                     </svg>
                                 </button>
 
+                                <!-- IKON SALIN TAUTAN -->
                                 <button onclick="window.copyThreadLink('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
                                     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -308,7 +453,7 @@ function listenToSocialFeed() {
                             </div>
 
                             <div id="reply-box-${thread.id}" style="display: none; margin-top: 14px; gap: 8px; align-items: center;">
-                                <input type="text" id="reply-input-${thread.id}" placeholder="Tulis balasan..." style="flex: 1; padding: 8px 12px; font-size: 13px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); outline: none;">
+                                <input type="text" id="reply-input-${thread.id}" placeholder="Tulis balasan untuk utas ini..." style="flex: 1; padding: 8px 12px; font-size: 13px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); outline: none;">
                                 <button onclick="window.submitReply('${thread.id}')" class="btn-primary" style="padding: 8px 14px; font-size: 12px; margin: 0; width: auto;">Balas</button>
                             </div>
 
@@ -323,31 +468,90 @@ function listenToSocialFeed() {
     });
 }
 
-// BARU: FUNGSI GLOBAL EKSEKUSI MODERASI HAPUS KOMENTAR DI FIRESTORE ARRAY
-window.deleteReplyComment = async (threadId, replyObject) => {
-    const confirmDel = await showCustomConfirm("Hapus komentar ini dari halaman utas?");
-    if (confirmDel) {
-        try {
-            const threadRef = doc(db, "threads", threadId);
-            await updateDoc(threadRef, {
-                replies: arrayRemove(replyObject)
-            });
-            showCustomToast("Komentar berhasil dihapus.");
-        } catch (err) {
-            console.error("Gagal menghapus komentar:", err);
-            showCustomToast("Gagal memoderasi komentar.");
+window.toggleSubReplyBox = (threadId, replyId) => {
+    const box = document.getElementById(`sub-reply-box-${replyId}`);
+    if (box) {
+        box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        if (box.style.display === 'flex') {
+            document.getElementById(`sub-reply-input-${replyId}`).focus();
         }
     }
 };
 
-window.replyToUser = (threadId, targetUsername) => {
-    const box = document.getElementById(`reply-box-${threadId}`);
-    if (box) box.style.display = 'flex';
+// PERBAIKAN BUG UTAMA: Menjamin sub-replies masuk ke objek array yang tepat dan langsung memicu pembaruan halaman secara instan
+window.submitSubReply = async (threadId, replyId) => {
+    const input = document.getElementById(`sub-reply-input-${replyId}`);
+    if (!input) return;
+    const contentText = input.value.trim();
+
+    if (!contentText) {
+        showCustomToast("Balasan tidak boleh kosong!");
+        return;
+    }
+
+    const myUsername = `@${currentUserEmail.split('@')[0]}`;
+    const today = new Date();
     
-    const input = document.getElementById(`reply-input-${threadId}`);
-    if (input) {
-        input.value = `${targetUsername} `;
-        input.focus();
+    try {
+        const querySnapshot = await getDocs(query(collection(db, "threads")));
+        let currentReplies = [];
+
+        querySnapshot.forEach(d => {
+            if (d.id === threadId) {
+                currentReplies = d.data().replies || [];
+            }
+        });
+
+        // Iterasi dan temukan objek komentar utama berdasarkan replyId secara presisi
+        const updatedReplies = currentReplies.map(rep => {
+            if (rep.replyId === replyId) {
+                const subArray = Array.isArray(rep.subReplies) ? rep.subReplies : [];
+                subArray.push({
+                    subReplyId: `sub_${Date.now()}`,
+                    userId: currentUserId,
+                    username: myUsername,
+                    content: contentText,
+                    createdAt: today.getTime(),
+                    timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
+                });
+                rep.subReplies = subArray;
+            }
+            return rep;
+        });
+
+        // Tembak pembaruan data balik ke Firestore database untuk memicu onSnapshot rendering
+        await updateDoc(doc(db, "threads", threadId), { replies: updatedReplies });
+        input.value = "";
+        document.getElementById(`sub-reply-box-${replyId}`).style.display = 'none';
+        showCustomToast("Balasan berhasil dikirim!");
+    } catch (err) {
+        console.error("Gagal kirim balasan bersarang:", err);
+        showCustomToast("Gagal memproses balasan.");
+    }
+};
+
+window.deleteSubComment = async (threadId, replyId, subReplyObj) => {
+    if (await showCustomConfirm("Hapus balasan komentar ini?")) {
+        try {
+            const querySnapshot = await getDocs(query(collection(db, "threads")));
+            let currentReplies = [];
+            querySnapshot.forEach(d => {
+                if (d.id === threadId) currentReplies = d.data().replies || [];
+            });
+
+            const updatedReplies = currentReplies.map(rep => {
+                if (rep.replyId === replyId) {
+                    const subArray = Array.isArray(rep.subReplies) ? rep.subReplies : [];
+                    rep.subReplies = subArray.filter(s => s.subReplyId !== subReplyObj.subReplyId);
+                }
+                return rep;
+            });
+
+            await updateDoc(doc(db, "threads", threadId), { replies: updatedReplies });
+            showCustomToast("Balasan berhasil dihapus.");
+        } catch (err) {
+            showCustomToast("Gagal menghapus balasan.");
+        }
     }
 };
 
@@ -356,7 +560,6 @@ window.toggleReplyBox = (id) => {
     if (box) {
         box.style.display = box.style.display === 'none' ? 'flex' : 'none';
         if (box.style.display === 'flex') {
-            document.getElementById(`reply-input-${id}`).value = "";
             document.getElementById(`reply-input-${id}`).focus();
         }
     }
@@ -375,9 +578,11 @@ window.submitReply = async (id) => {
     const myUsername = `@${currentUserEmail.split('@')[0]}`;
     const today = new Date();
     const replyObject = {
+        replyId: `rep_${Date.now()}`, 
         userId: currentUserId,
         username: myUsername,
         content: contentText,
+        subReplies: [], 
         createdAt: today.getTime(),
         timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
     };
@@ -396,9 +601,25 @@ window.submitReply = async (id) => {
     }
 };
 
+window.deleteReplyComment = async (threadId, replyObject) => {
+    const confirmDel = await showCustomConfirm("Hapus komentar ini dari halaman utas?");
+    if (confirmDel) {
+        try {
+            const threadRef = doc(db, "threads", threadId);
+            await updateDoc(threadRef, {
+                replies: arrayRemove(replyObject)
+            });
+            showCustomToast("Komentar berhasil dihapus.");
+        } catch (err) {
+            console.error("Gagal menghapus komentar:", err);
+            showCustomToast("Gagal memoderasi komentar.");
+        }
+    }
+};
+
 window.repostThread = async (id, originalUsername, originalContent) => {
     const myUsername = `@${currentUserEmail.split('@')[0]}`;
-    const confirmRepost = await showCustomConfirm(`Bagikan ulang utas milik ${originalUsername} ke linimasa Anda?`, false);
+    const confirmRepost = await showCustomConfirm("Bagikan ulang utas ini ke linimasa Anda?", false);
     
     if (confirmRepost) {
         const today = new Date();
@@ -860,18 +1081,6 @@ function renderHistoryList(items) {
         container.innerHTML += groupHtml;
     }
 }
-
-window.deleteTx = async (id) => {
-    const confirmDel = await showCustomConfirm("Hapus catatan transaksi ini?");
-    if (confirmDel) { 
-        try {
-            await deleteDoc(doc(db, "transactions", id)); 
-            showCustomToast("Catatan transaksi berhasil dihapus.");
-        } catch (err) {
-            showCustomToast("Gagal menghapus transaksi.");
-        }
-    }
-};
 
 // SCRIPT ATUR URUTAN POSISI KARTU (DRAG & DROP)
 const dragContainer = document.getElementById('drag-grid-container');
