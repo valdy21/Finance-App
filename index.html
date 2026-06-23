@@ -32,12 +32,13 @@
         <main class="main-content">
             
             <section id="pane-dash" class="tab-pane active">
+                
                 <div class="balance-card">
-                    <span class="card-label">Sisa Anggaran Bulan Ini (Gajian - Pengeluaran)</span>
+                    <span class="card-label">Sisa Anggaran Bulan Ini</span>
                     <h1 id="total-monthly">Rp 0</h1>
-                    <div class="salary-info-sub" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
-                        Total Uang Masuk: <span id="label-salary-amount">Rp 0</span> (Gajian setiap tanggal <span id="label-salary-date">-</span>)
-                    </div>
+                    <p class="salary-info-sub">
+                        Total uang masuk sebesar <span id="label-salary-amount">Rp 0</span> dari gajian setiap tanggal <span id="label-salary-date">-</span>.
+                    </p>
                 </div>
 
                 <div class="card hero-card">
@@ -71,6 +72,7 @@
                                 </select>
                             </div>
                             <button type="submit" class="btn-primary" style="background-color: #34c759;">Simpan Aturan Gajian</button>
+                            <button type="button" id="btn-reset-salary" class="btn-logout" style="width: 100%; padding: 12px; margin-top: 8px; text-align: center;">Hapus Anggaran (Reset)</button>
                         </form>
                     </div>
 
@@ -106,38 +108,56 @@
                             </div>
                         </form>
                         <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Daftar Kategori Aktif:</label>
-                        <div id="category-manage-list">
-                            </div>
+                        <div id="category-manage-list"></div>
                     </div>
                     
                 </div>
             </section>
 
             <section id="pane-history" class="tab-pane">
-                <div class="history-filter-bar">
-                    <h3>Histori Pengeluaran</h3>
-                    <div class="filters">
-                        <select id="filter-year"></select>
-                        <select id="filter-month">
-                            <option value="01">Januari</option>
-                            <option value="02">Februari</option>
-                            <option value="03">Maret</option>
-                            <option value="04">April</option>
-                            <option value="05">Mei</option>
-                            <option value="06">Juni</option>
-                            <option value="07">Juli</option>
-                            <option value="08">Agustus</option>
-                            <option value="09">September</option>
-                            <option value="10">Oktober</option>
-                            <option value="11">November</option>
-                            <option value="12">Desember</option>
-                        </select>
+                <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px; align-items: stretch;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Histori Pengeluaran</h3>
+                        <div class="filters">
+                            <select id="filter-year"></select>
+                            <select id="filter-month">
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Maret</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Juni</option>
+                                <option value="07">Juli</option>
+                                <option value="08">Agustus</option>
+                                <option value="09">September</option>
+                                <option value="10">Oktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Desember</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; scrollbar-width: none;">
+                        <button type="button" id="btn-clear-day" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Hari Ini</button>
+                        <button type="button" id="btn-clear-month" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Bulan Ini</button>
+                        <button type="button" id="btn-clear-year" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Tahun Ini</button>
                     </div>
                 </div>
+
                 <div id="history-list"></div>
             </section>
             
         </main>
+    </div>
+
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <p id="modal-message">Apakah Anda yakin?</p>
+            <div class="modal-actions">
+                <button id="modal-btn-cancel" class="modal-btn">Batal</button>
+                <button id="modal-btn-confirm" class="modal-btn modal-btn-destructive">Hapus</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>
