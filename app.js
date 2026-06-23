@@ -1,8 +1,8 @@
 import { auth } from './auth.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Konfigurasi Firebase Proyek Anda (Terkunci)
+// Konfigurasi Firebase Proyek Anda
 const firebaseConfig = {
   apiKey: "AIzaSyDLW7h2_pYK5eRA-Fy9aeQzF5t01UdZXjU",
   authDomain: "keuangan-app-f2c87.firebaseapp.com",
@@ -19,6 +19,46 @@ let userSalaryConfig = { amount: 0, date: 1 };
 let expenseChartInstance = null;
 let activeCategories = [];
 
+// ================= BARU: LOGIKA PROMISE JEMBATAN POPUP MODAL KUSTOM =================
+function showCustomConfirm(message, isDestructive = true) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const msgEl = document.getElementById('modal-message');
+        const confirmBtn = document.getElementById('modal-btn-confirm');
+        const cancelBtn = document.getElementById('modal-btn-cancel');
+
+        if (!modal || !msgEl || !confirmBtn || !cancelBtn) {
+            // Jika elemen tidak ditemukan, fallback ke confirm biasa agar tidak crash
+            resolve(confirm(message));
+            return;
+        }
+
+        msgEl.innerText = message;
+        confirmBtn.innerText = isDestructive ? "Hapus" : "Yakin";
+
+        if (isDestructive) {
+            confirmBtn.classList.add('modal-btn-destructive');
+        } else {
+            confirmBtn.classList.remove('modal-btn-destructive');
+        }
+
+        // Tampilkan modal ke layar
+        modal.classList.add('active');
+
+        const closeWithResult = (result) => {
+            modal.classList.remove('active');
+            // Hapus event listener lama agar tidak menumpuk saat dipanggil lagi
+            confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            resolve(result);
+        };
+
+        document.getElementById('modal-btn-confirm').addEventListener('click', () => closeWithResult(true));
+        document.getElementById('modal-btn-cancel').addEventListener('click', () => closeWithResult(false));
+    });
+}
+// ===================================================================================
+
 // 1. Sinkronisasi Navigasi Tab (Dashboard & Histori)
 const tabs = document.querySelectorAll('.nav-item');
 tabs.forEach(tab => {
@@ -30,7 +70,7 @@ tabs.forEach(tab => {
     });
 });
 
-// 2. Format Input Rupiah Real-Time untuk kolom Pengeluaran & Gajian
+// 2. Format Input Rupiah Real-Time
 const setupFormatRupiah = (elementId) => {
     const el = document.getElementById(elementId);
     if (el) {
@@ -43,7 +83,7 @@ const setupFormatRupiah = (elementId) => {
 setupFormatRupiah('input-nominal');
 setupFormatRupiah('input-gajian');
 
-// 3. Konfigurasi Dropdown Tahun & Bulan Secara Dinamis
+// 3. Konfigurasi Dropdown Tahun & Bulan Dinamis
 const filterYear = document.getElementById('filter-year');
 if (filterYear) {
     const currentYear = new Date().getFullYear();
@@ -69,6 +109,7 @@ function initApp() {
     const filterMonth = document.getElementById('filter-month');
     if (filterMonth) filterMonth.addEventListener('change', listenToSalaryAndTransactions);
     if (filterYear) filterYear.addEventListener('change', listenToSalaryAndTransactions);
+    setupBulkDeleteListeners();
 }
 
 // 5. Simpan / Update Aturan Uang Gajian
@@ -91,6 +132,70 @@ if (salaryForm) {
     });
 }
 
+// 5B. Logika Tombol Hapus Aturan Anggaran (DIPERBARUI: Menggunakan Custom Popup)
+const btnResetSalary = document.getElementById('btn-reset-salary');
+if (btnResetSalary) {
+    btnResetSalary.addEventListener('click', async () => {
+        const confirmReset = await showCustomConfirm("Apakah Anda yakin ingin menghapus aturan anggaran ini? Nominal sisa anggaran akan kembali menjadi nol (Rp 0).");
+        if (confirmReset) {
+            try {
+                await setDoc(doc(db, "salary_settings", currentUserId), {
+                    amount: 0,
+                    paydayDate: 1
+                });
+                document.getElementById('salary-form').reset();
+                alert("Anggaran bulanan berhasil direset!");
+            } catch (err) {
+                console.error("Gagal mereset anggaran:", err);
+                alert("Terjadi kesalahan, gagal menghapus anggaran.");
+            }
+        }
+    });
+}
+
+// Interaksi Tombol Hapus Histori Massal (DIPERBARUI: Menggunakan Custom Popup)
+function setupBulkDeleteListeners() {
+    const deleteBatchByQuery = async (startRange, endRange, confirmMessage) => {
+        const confirmDelete = await showCustomConfirm(confirmMessage);
+        if (!confirmDelete) return;
+        try {
+            const q = query(
+                collection(db, "transactions"),
+                where("userId", "==", currentUserId),
+                where("date", ">=", startRange),
+                where("date", "<=", endRange)
+            );
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                alert("Tidak ada data transaksi ditemukan pada rentang waktu ini.");
+                return;
+            }
+            const promises = snapshot.docs.map(d => deleteDoc(doc(db, "transactions", d.id)));
+            await Promise.all(promises);
+            alert("Histori transaksi berhasil dibersihkan!");
+        } catch (err) {
+            console.error("Gagal menghapus massal:", err);
+            alert("Terjadi masalah saat mencoba menghapus data.");
+        }
+    };
+
+    document.getElementById('btn-clear-day')?.addEventListener('click', () => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        deleteBatchByQuery(todayStr, todayStr, "Hapus seluruh transaksi belanja khusus HARI INI?");
+    });
+
+    document.getElementById('btn-clear-month')?.addEventListener('click', () => {
+        const selYear = document.getElementById('filter-year').value;
+        const selMonth = document.getElementById('filter-month').value;
+        deleteBatchByQuery(`${selYear}-${selMonth}-01`, `${selYear}-${selMonth}-31`, `Hapus seluruh transaksi belanja pada periode BULAN ${selMonth} TAHUN ${selYear}?`);
+    });
+
+    document.getElementById('btn-clear-year')?.addEventListener('click', () => {
+        const selYear = document.getElementById('filter-year').value;
+        deleteBatchByQuery(`${selYear}-01-01`, `${selYear}-12-31`, `Hapus seluruh catatan pengeluaran selama SATU TAHUN PENUH di tahun ${selYear}?`);
+    });
+}
+
 // 6. Simpan Data Transaksi Pengeluaran Baru
 const txForm = document.getElementById('transaction-form');
 if (txForm) {
@@ -104,6 +209,10 @@ if (txForm) {
 
         const today = new Date();
         const dateString = today.toISOString().split('T')[0];
+        
+        const hours = String(today.getHours()).padStart(2, '0');
+        const minutes = String(today.getMinutes()).padStart(2, '0');
+        const timeString = `${hours}:${minutes}`;
 
         try {
             await addDoc(collection(db, "transactions"), {
@@ -112,7 +221,8 @@ if (txForm) {
                 category: category,
                 note: note,
                 date: dateString,
-                createdAt: new Date().getTime()
+                time: timeString,
+                createdAt: today.getTime()
             });
             txForm.reset();
         } catch (err) {
@@ -192,8 +302,10 @@ function listenToCategories() {
     });
 }
 
+// DIPERBARUI: Menggunakan Custom Popup
 window.deleteCategory = async (id) => {
-    if (confirm("Hapus kategori ini? Catatan lama tidak akan hilang, namun tidak bisa dipilih di transaksi baru.")) {
+    const confirmDel = await showCustomConfirm("Hapus kategori ini? Catatan lama tidak akan hilang, namun tidak bisa dipilih di transaksi baru.");
+    if (confirmDel) {
         await deleteDoc(doc(db, "categories", id));
     }
 };
@@ -238,7 +350,7 @@ function listenToSalaryAndTransactions() {
             if (budgetBulanIni < 0) {
                 totalMonthlyEl.style.color = "var(--accent-red)";
             } else {
-                totalMonthlyEl.style.color = "var(--text-primary)";
+                totalMonthlyEl.style.color = "#000000";
             }
         }
     };
@@ -251,7 +363,7 @@ function listenToSalaryAndTransactions() {
             
             document.getElementById('label-salary-amount').innerText = `Rp ${userSalaryConfig.amount.toLocaleString('id-ID')}`;
             document.getElementById('label-salary-date').innerText = userSalaryConfig.date;
-            document.getElementById('input-gajian').value = userSalaryConfig.amount.toLocaleString('id-ID');
+            document.getElementById('input-gajian').value = userSalaryConfig.amount ? userSalaryConfig.amount.toLocaleString('id-ID') : "";
             document.getElementById('input-tgl-gajian').value = userSalaryConfig.date;
         } else {
             userSalaryConfig = { amount: 0, date: 1 };
@@ -308,7 +420,6 @@ function renderAnalytics(totals, grandTotal) {
 
     const categories = Object.keys(totals);
     const nominals = Object.values(totals);
-    
     const colors = ['#ff9500', '#ff2d55', '#5ac8fa', '#5856d6', '#34c759', '#ffcc00', '#8e8e93'];
 
     if (expenseChartInstance) {
@@ -368,11 +479,14 @@ function renderHistoryList(items) {
         let groupHtml = `<div class="day-group"><div class="day-title">${dayName}</div>`;
         
         groups[date].forEach(item => {
+            const displayTime = item.time ? item.time : '--:--';
+            const displayNote = item.note ? item.note : 'Tanpa Catatan';
+
             groupHtml += `
                 <div class="history-item">
                     <div class="item-info">
                         <p>${item.category}</p>
-                        <span>${item.note || 'Tanpa Catatan'}</span>
+                        <span>[${displayTime}] • ${displayNote}</span>
                     </div>
                     <div class="item-amount">
                         <span>Rp ${item.nominal.toLocaleString('id-ID')}</span>
@@ -385,38 +499,36 @@ function renderHistoryList(items) {
     }
 }
 
+// DIPERBARUI: Menggunakan Custom Popup
 window.deleteTx = async (id) => {
-    if (confirm("Hapus catatan ini?")) { await deleteDoc(doc(db, "transactions", id)); }
+    const confirmDel = await showCustomConfirm("Hapus catatan transaksi ini?");
+    if (confirmDel) { 
+        await deleteDoc(doc(db, "transactions", id)); 
+    }
 };
 
-// ================= SCRIPT ATUR URUTAN POSISI KARTU (DRAG & DROP LANGSUNG PADA BADAN KARTU) =================
+// SCRIPT ATUR URUTAN POSISI KARTU (DRAG & DROP)
 const dragContainer = document.getElementById('drag-grid-container');
-
 if (dragContainer) {
     const draggables = document.querySelectorAll('.draggable-card');
-
     draggables.forEach(draggable => {
         draggable.addEventListener('dragstart', (e) => {
-            // Cegah drag jika user sedang mengklik atau memfokuskan elemen input/select/button di dalam kartu
             if (['INPUT', 'SELECT', 'BUTTON', 'OPTION'].includes(e.target.tagName)) {
                 e.preventDefault();
                 return;
             }
             draggable.classList.add('dragging');
         });
-
         draggable.addEventListener('dragend', () => {
             draggable.classList.remove('dragging');
             const currentOrder = Array.from(document.querySelectorAll('.draggable-card')).map(card => card.querySelector('h3').innerText);
             localStorage.setItem('user_card_order', JSON.stringify(currentOrder));
         });
     });
-
     dragContainer.addEventListener('dragover', (e) => {
         e.preventDefault();
         const afterElement = getDragAfterElement(dragContainer, e.clientX);
         const draggingCard = document.querySelector('.dragging');
-        
         if (draggingCard) {
             if (afterElement == null) {
                 dragContainer.appendChild(draggingCard);
@@ -429,11 +541,9 @@ if (dragContainer) {
 
 function getDragAfterElement(container, x) {
     const draggableElements = [...container.querySelectorAll('.draggable-card:not(.dragging)')];
-
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = x - box.left - box.width / 2;
-        
         if (offset < 0 && offset > closest.offset) {
             return { offset: offset, element: child };
         } else {
@@ -447,7 +557,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedOrder && dragContainer) {
         const orderArray = JSON.parse(savedOrder);
         const cards = [...dragContainer.querySelectorAll('.draggable-card')];
-        
         orderArray.forEach(titleText => {
             const matchedCard = cards.find(card => card.querySelector('h3').innerText === titleText);
             if (matchedCard) {
