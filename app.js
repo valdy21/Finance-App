@@ -19,7 +19,7 @@ let userSalaryConfig = { amount: 0, date: 1 };
 let expenseChartInstance = null;
 let activeCategories = [];
 
-// ================= BARU: LOGIKA PROMISE JEMBATAN POPUP MODAL KUSTOM =================
+// LOGIKA PROMISE JEMBATAN POPUP MODAL KUSTOM
 function showCustomConfirm(message, isDestructive = true) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
@@ -28,7 +28,6 @@ function showCustomConfirm(message, isDestructive = true) {
         const cancelBtn = document.getElementById('modal-btn-cancel');
 
         if (!modal || !msgEl || !confirmBtn || !cancelBtn) {
-            // Jika elemen tidak ditemukan, fallback ke confirm biasa agar tidak crash
             resolve(confirm(message));
             return;
         }
@@ -42,12 +41,10 @@ function showCustomConfirm(message, isDestructive = true) {
             confirmBtn.classList.remove('modal-btn-destructive');
         }
 
-        // Tampilkan modal ke layar
         modal.classList.add('active');
 
         const closeWithResult = (result) => {
             modal.classList.remove('active');
-            // Hapus event listener lama agar tidak menumpuk saat dipanggil lagi
             confirmBtn.replaceWith(confirmBtn.cloneNode(true));
             cancelBtn.replaceWith(cancelBtn.cloneNode(true));
             resolve(result);
@@ -57,7 +54,29 @@ function showCustomConfirm(message, isDestructive = true) {
         document.getElementById('modal-btn-cancel').addEventListener('click', () => closeWithResult(false));
     });
 }
-// ===================================================================================
+
+// LOGIKA PENAMPIL NOTIFIKASI TOAST MELAYANG AUTOMATIC FADE
+function showCustomToast(message) {
+    const container = document.getElementById('custom-toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-item';
+    toast.innerText = message;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 50);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 250);
+    }, 2500);
+}
 
 // 1. Sinkronisasi Navigasi Tab (Dashboard & Histori)
 const tabs = document.querySelectorAll('.nav-item');
@@ -125,14 +144,15 @@ if (salaryForm) {
                 amount: parseInt(rawSalary),
                 paydayDate: parseInt(salaryDate)
             });
-            alert("Aturan uang gajian berhasil disimpan!");
+            showCustomToast("Aturan uang gajian berhasil disimpan!");
         } catch (err) {
             console.error("Gagal menyimpan gaji:", err);
+            showCustomToast("Gagal menyimpan aturan gaji.");
         }
     });
 }
 
-// 5B. Logika Tombol Hapus Aturan Anggaran (DIPERBARUI: Menggunakan Custom Popup)
+// 5B. Logika Tombol Hapus Aturan Anggaran
 const btnResetSalary = document.getElementById('btn-reset-salary');
 if (btnResetSalary) {
     btnResetSalary.addEventListener('click', async () => {
@@ -144,16 +164,16 @@ if (btnResetSalary) {
                     paydayDate: 1
                 });
                 document.getElementById('salary-form').reset();
-                alert("Anggaran bulanan berhasil direset!");
+                showCustomToast("Anggaran bulanan berhasil direset!");
             } catch (err) {
                 console.error("Gagal mereset anggaran:", err);
-                alert("Terjadi kesalahan, gagal menghapus anggaran.");
+                showCustomToast("Terjadi kesalahan, gagal menghapus anggaran.");
             }
         }
     });
 }
 
-// Interaksi Tombol Hapus Histori Massal (DIPERBARUI: Menggunakan Custom Popup)
+// Interaksi Tombol Hapus Histori Massal
 function setupBulkDeleteListeners() {
     const deleteBatchByQuery = async (startRange, endRange, confirmMessage) => {
         const confirmDelete = await showCustomConfirm(confirmMessage);
@@ -167,15 +187,15 @@ function setupBulkDeleteListeners() {
             );
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
-                alert("Tidak ada data transaksi ditemukan pada rentang waktu ini.");
+                showCustomToast("Tidak ada data transaksi ditemukan.");
                 return;
             }
             const promises = snapshot.docs.map(d => deleteDoc(doc(db, "transactions", d.id)));
             await Promise.all(promises);
-            alert("Histori transaksi berhasil dibersihkan!");
+            showCustomToast("Histori transaksi berhasil dibersihkan!");
         } catch (err) {
             console.error("Gagal menghapus massal:", err);
-            alert("Terjadi masalah saat mencoba menghapus data.");
+            showCustomToast("Terjadi masalah saat mencoba menghapus data.");
         }
     };
 
@@ -192,7 +212,7 @@ function setupBulkDeleteListeners() {
 
     document.getElementById('btn-clear-year')?.addEventListener('click', () => {
         const selYear = document.getElementById('filter-year').value;
-        deleteBatchByQuery(`${selYear}-01-01`, `${selYear}-12-31`, `Hapus seluruh catatan pengeluaran selama SATU TAHUN PENUH di tahun ${selYear}?`);
+        deleteBatchByQuery(`${selYear}-01-01`, `${selYear}-12-31`, `PERINGATAN BESAR! Hapus seluruh catatan pengeluaran selama SATU TAHUN PENUH di tahun ${selYear}?`);
     });
 }
 
@@ -205,7 +225,7 @@ if (txForm) {
         const note = document.getElementById('input-note').value;
         const category = document.getElementById('input-category').value;
         
-        if(!category) { alert("Silakan tambah dan pilih kategori terlebih dahulu!"); return; }
+        if(!category) { showCustomToast("Silakan tambah dan pilih kategori terlebih dahulu!"); return; }
 
         const today = new Date();
         const dateString = today.toISOString().split('T')[0];
@@ -225,8 +245,10 @@ if (txForm) {
                 createdAt: today.getTime()
             });
             txForm.reset();
+            showCustomToast("Transaksi pengeluaran berhasil disimpan!");
         } catch (err) {
             console.error("Gagal menyimpan transaksi:", err);
+            showCustomToast("Gagal mencatat transaksi.");
         }
     });
 }
@@ -239,7 +261,7 @@ if (catForm) {
         const newCatName = document.getElementById('input-new-category').value.trim();
         
         if (activeCategories.some(c => c.name.toLowerCase() === newCatName.toLowerCase())) {
-            alert("Kategori ini sudah terdaftar!");
+            showCustomToast("Kategori ini sudah terdaftar!");
             return;
         }
 
@@ -250,8 +272,10 @@ if (catForm) {
                 createdAt: new Date().getTime()
             });
             document.getElementById('input-new-category').value = "";
+            showCustomToast("Kategori baru berhasil ditambahkan!");
         } catch (err) {
             console.error("Gagal menambah kategori:", err);
+            showCustomToast("Gagal menambah kategori.");
         }
     });
 }
@@ -302,11 +326,15 @@ function listenToCategories() {
     });
 }
 
-// DIPERBARUI: Menggunakan Custom Popup
 window.deleteCategory = async (id) => {
     const confirmDel = await showCustomConfirm("Hapus kategori ini? Catatan lama tidak akan hilang, namun tidak bisa dipilih di transaksi baru.");
     if (confirmDel) {
-        await deleteDoc(doc(db, "categories", id));
+        try {
+            await deleteDoc(doc(db, "categories", id));
+            showCustomToast("Kategori berhasil dihapus.");
+        } catch (err) {
+            showCustomToast("Gagal menghapus kategori.");
+        }
     }
 };
 
@@ -499,11 +527,15 @@ function renderHistoryList(items) {
     }
 }
 
-// DIPERBARUI: Menggunakan Custom Popup
 window.deleteTx = async (id) => {
     const confirmDel = await showCustomConfirm("Hapus catatan transaksi ini?");
     if (confirmDel) { 
-        await deleteDoc(doc(db, "transactions", id)); 
+        try {
+            await deleteDoc(doc(db, "transactions", id)); 
+            showCustomToast("Catatan transaksi berhasil dihapus.");
+        } catch (err) {
+            showCustomToast("Gagal menghapus transaksi.");
+        }
     }
 };
 
