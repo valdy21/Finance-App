@@ -1,6 +1,6 @@
 import { auth } from './auth.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Konfigurasi Firebase Proyek Anda
 const firebaseConfig = {
@@ -15,6 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 let currentUserId = "";
+let currentUserEmail = "";
 let userSalaryConfig = { amount: 0, date: 1 };
 let expenseChartInstance = null;
 let activeCategories = [];
@@ -78,7 +79,7 @@ function showCustomToast(message) {
     }, 2500);
 }
 
-// 1. Sinkronisasi Navigasi Tab (Dashboard & Histori)
+// 1. Sinkronisasi Navigasi Tab (Beranda, Dashboard & Histori)
 const tabs = document.querySelectorAll('.nav-item');
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -118,6 +119,13 @@ if (filterYear) {
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUserId = user.uid;
+        currentUserEmail = user.email || "user@email.com";
+        
+        const initialsEl = document.getElementById('user-avatar-initials');
+        if (initialsEl) {
+            initialsEl.innerText = currentUserEmail.charAt(0).toUpperCase();
+        }
+
         initApp();
     }
 });
@@ -125,11 +133,167 @@ auth.onAuthStateChanged(user => {
 function initApp() {
     listenToCategories(); 
     listenToSalaryAndTransactions();
+    listenToSocialFeed(); 
+    setupSocialInputListener(); 
     const filterMonth = document.getElementById('filter-month');
     if (filterMonth) filterMonth.addEventListener('change', listenToSalaryAndTransactions);
     if (filterYear) filterYear.addEventListener('change', listenToSalaryAndTransactions);
     setupBulkDeleteListeners();
 }
+
+// ======================= LOGIKA FITUR BERANDA UTAS ALA THREADS =======================
+function setupSocialInputListener() {
+    const btnSubmit = document.getElementById('btn-submit-post');
+    if (btnSubmit) {
+        btnSubmit.addEventListener('click', async () => {
+            const textarea = document.getElementById('input-post-text');
+            if (!textarea) return;
+            const textContent = textarea.value.trim();
+
+            if (!textContent) {
+                showCustomToast("Teks postingan tidak boleh kosong!");
+                return;
+            }
+
+            const username = `@${currentUserEmail.split('@')[0]}`;
+            const today = new Date();
+
+            try {
+                await addDoc(collection(db, "threads"), {
+                    userId: currentUserId,
+                    username: username,
+                    content: textContent,
+                    likes: [], 
+                    createdAt: today.getTime(),
+                    timeLabel: `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
+                });
+                textarea.value = "";
+                showCustomToast("Utas berhasil dibagikan!");
+            } catch (err) {
+                console.error("Gagal membagikan utas:", err);
+                showCustomToast("Gagal membagikan postingan.");
+            }
+        });
+    }
+}
+
+let unsubscribeSocial = null;
+function listenToSocialFeed() {
+    if (unsubscribeSocial) unsubscribeSocial();
+
+    const q = query(collection(db, "threads"));
+
+    unsubscribeSocial = onSnapshot(q, (snapshot) => {
+        const feedContainer = document.getElementById('feed-container');
+        if (!feedContainer) return;
+        feedContainer.innerHTML = "";
+
+        let threadsList = [];
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            data.id = doc.id;
+            threadsList.push(data);
+        });
+
+        threadsList.sort((a, b) => b.createdAt - a.createdAt);
+
+        if (threadsList.length === 0) {
+            feedContainer.innerHTML = "<div class='card' style='text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;'>Belum ada diskusi hari ini. Jadilah yang pertama!</div>";
+            return;
+        }
+
+        feedContainer.innerHTML = threadsList.map(thread => {
+            const hasLiked = Array.isArray(thread.likes) && thread.likes.includes(currentUserId);
+            const likeCount = Array.isArray(thread.likes) ? thread.likes.length : 0;
+            const initialChar = thread.username ? thread.username.charAt(1).toUpperCase() : "U";
+            const isMyPost = thread.userId === currentUserId;
+
+            return `
+                <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; position: relative;">
+                    <div style="width: 36px; height: 36px; background: #c7c7cc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 13px; flex-shrink: 0;">
+                        ${initialChar}
+                    </div>
+                    
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; font-size: 14px; color: var(--text-primary);">${thread.username}</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; color: var(--text-secondary);">${thread.timeLabel || '--:--'}</span>
+                                ${isMyPost ? `<button onclick="window.deleteThreadPost('${thread.id}')" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; font-weight:600; padding:0 4px;">Hapus</button>` : ''}
+                            </div>
+                        </div>
+                        <p style="font-size: 14px; line-height: 1.4; color: var(--text-primary); white-space: pre-wrap; margin-top: 2px;">${thread.content}</p>
+                        
+                        <div style="display: flex; gap: 18px; margin-top: 12px; align-items: center;">
+                            <button onclick="window.toggleLikeThread('${thread.id}', ${hasLiked})" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; color: ${hasLiked ? 'var(--accent-red)' : 'var(--text-secondary)'}; transition: color 0.15s ease;">
+                                <svg width="19" height="19" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
+                                <span style="font-size: 13px; font-weight: 600;">${likeCount}</span>
+                            </button>
+
+                            <button onclick="window.triggerSocialToast('Fitur Balasan akan segera hadir!')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
+                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                </svg>
+                            </button>
+
+                            <button onclick="window.triggerSocialToast('Utas berhasil dibagikan ulang!')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
+                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="17 1 21 5 17 9"></polyline>
+                                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                    <polyline points="7 23 3 19 7 15"></polyline>
+                                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                                </svg>
+                            </button>
+
+                            <button onclick="window.copyThreadLink('${thread.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0; display: flex; align-items: center;">
+                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    });
+}
+
+window.toggleLikeThread = async (id, currentLikedState) => {
+    const threadRef = doc(db, "threads", id);
+    try {
+        if (currentLikedState) {
+            await updateDoc(threadRef, { likes: arrayRemove(currentUserId) });
+        } else {
+            await updateDoc(threadRef, { likes: arrayUnion(currentUserId) });
+        }
+    } catch (err) {
+        console.error("Gagal memproses Like:", err);
+    }
+};
+
+window.deleteThreadPost = async (id) => {
+    if (await showCustomConfirm("Hapus postingan utas Anda ini?")) {
+        try {
+            await deleteDoc(doc(db, "threads", id));
+            showCustomToast("Utas berhasil dihapus.");
+        } catch (err) {
+            showCustomToast("Gagal menghapus postingan.");
+        }
+    }
+};
+
+window.copyThreadLink = (id) => {
+    navigator.clipboard.writeText(`${window.location.origin}#thread-${id}`);
+    showCustomToast("Tautan utas berhasil disalin!");
+};
+
+window.triggerSocialToast = (msg) => {
+    showCustomToast(msg);
+};
+// ===========================================================================================
 
 // 5. Simpan / Update Aturan Uang Gajian
 const salaryForm = document.getElementById('salary-form');
@@ -429,13 +593,12 @@ function listenToSalaryAndTransactions() {
     });
 }
 
-// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN (Diperbarui: Ditambahkan Total Rupiah)
+// 8. Render Teks Progress Bar & DIAGRAM LINGKARAN (Activity Rings Style)
 function renderAnalytics(totals, grandTotal) {
     const container = document.getElementById('analytics-list');
     if (!container) return;
     container.innerHTML = "";
     
-    // MENYUNTIKKAN NILAI RUPIAH DI BAWAH LIST ANALITIK SECARA REAL-TIME
     const grandTotalEl = document.getElementById('analytics-grand-total');
     if (grandTotalEl) {
         grandTotalEl.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
@@ -454,8 +617,6 @@ function renderAnalytics(totals, grandTotal) {
 
     const categories = Object.keys(totals);
     const nominals = Object.values(totals);
-    
-    // Warna Apple Watch Style (Sudut Melengkung & Spasi Angin)
     const colors = ['#ff9500', '#ff2d55', '#5ac8fa', '#5856d6', '#34c759', '#ffcc00', '#8e8e93'];
 
     if (expenseChartInstance) {
@@ -471,9 +632,9 @@ function renderAnalytics(totals, grandTotal) {
                     data: nominals,
                     backgroundColor: colors.slice(0, categories.length),
                     borderWidth: 0,
-                    borderRadius: 16, // Sudut ring melengkung halus
-                    spacing: 6,       // Jarak udara estetik antar ring
-                    cutout: '75%'     // Ketebalan ring proporsional
+                    borderRadius: 16, 
+                    spacing: 6,       
+                    cutout: '75%'     
                 }]
             },
             options: {
@@ -484,7 +645,7 @@ function renderAnalytics(totals, grandTotal) {
                         position: 'right',
                         labels: { 
                             boxWidth: 8, 
-                            usePointStyle: true, // Mengubah kotak legenda menjadi titik bulat
+                            usePointStyle: true, 
                             pointStyle: 'circle',
                             font: { size: 12, weight: '500' } 
                         }
@@ -542,18 +703,6 @@ function renderHistoryList(items) {
         container.innerHTML += groupHtml;
     }
 }
-
-window.deleteTx = async (id) => {
-    const confirmDel = await showCustomConfirm("Hapus catatan transaksi ini?");
-    if (confirmDel) { 
-        try {
-            await deleteDoc(doc(db, "transactions", id)); 
-            showCustomToast("Catatan transaksi berhasil dihapus.");
-        } catch (err) {
-            showCustomToast("Gagal menghapus transaksi.");
-        }
-    }
-};
 
 // SCRIPT ATUR URUTAN POSISI KARTU (DRAG & DROP)
 const dragContainer = document.getElementById('drag-grid-container');
