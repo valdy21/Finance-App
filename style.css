@@ -414,15 +414,15 @@ input:focus, select:focus {
     font-weight: 600;
 }
 
-/* ================= BARU: STYLE POPUP MODAL BLUR KUSTOM DI TENGAH LAYAR ================= */
+/* STYLE POPUP MODAL BLUR KUSTOM DI TENGAH LAYAR */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.25); /* Lapisan hitam transparan tipis */
-    backdrop-filter: blur(8px); /* KUNCI EFFECT: Efek blur latar belakang halaman */
+    background: rgba(0, 0, 0, 0.25); 
+    backdrop-filter: blur(8px); 
     -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -433,7 +433,6 @@ input:focus, select:focus {
     transition: opacity 0.25s ease;
 }
 
-/* Status aktif untuk menampilkan modal */
 .modal-overlay.active {
     opacity: 1;
     pointer-events: auto;
@@ -454,7 +453,7 @@ input:focus, select:focus {
 }
 
 .modal-overlay.active .modal-box {
-    transform: scale(1); /* Efek pop-in membal halus */
+    transform: scale(1); 
 }
 
 #modal-message {
@@ -467,7 +466,7 @@ input:focus, select:focus {
 
 .modal-actions {
     display: flex;
-    border-top: 1px solid rgba(0, 0, 0, 0.08); /* Garis batas tombol khas iOS */
+    border-top: 1px solid rgba(0, 0, 0, 0.08); 
 }
 
 .modal-btn {
@@ -484,7 +483,7 @@ input:focus, select:focus {
 
 .modal-btn:first-child {
     border-right: 1px solid rgba(0, 0, 0, 0.08);
-    font-weight: 600; /* Tebalkan tombol batal seperti iOS */
+    font-weight: 600; 
 }
 
 .modal-btn-destructive {
@@ -492,9 +491,46 @@ input:focus, select:focus {
 }
 
 .modal-btn:active {
-    background: rgba(0, 0, 0, 0.04); /* Efek redup saat ditekan jari */
+    background: rgba(0, 0, 0, 0.04); 
 }
-/* ======================================================================================= */
+
+/* ================= BARU: STYLE TOAST NOTIFIKASI MELAYANG (AUTOMATIC FADE) ================= */
+.toast-container {
+    position: fixed;
+    bottom: 32px; /* Melayang di area bawah jempol */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10000;
+    width: 90%;
+    max-width: 320px;
+    pointer-events: none;
+}
+
+.toast-item {
+    background: rgba(29, 29, 31, 0.9); /* Hitam pekat khas iOS Dark Mode Element */
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: #ffffff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Status memicu animasi geser naik dan pudar terlihat */
+.toast-item.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+/* ========================================================================================== */
 
 /* RESPONSIVE BREAKPOINTS */
 @media (min-width: 600px) {
