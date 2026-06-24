@@ -15,7 +15,6 @@
             window.location.href = 'login.html';
         }
         
-        // Inisialisasi Tema Gelap Sejak Awal sebelum render agar tidak berkedip
         const savedTheme = localStorage.getItem('user_theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
@@ -44,14 +43,12 @@
             --ios-destructive: #ff453a;
             --ios-accent: #0a84ff;
             
-            /* Overwrite style bawaan aplikasi lama ke mode gelap */
             --bg-primary: #121212;
             --bg-card: #1c1c1e;
             --text-primary: #ffffff;
             --text-secondary: #aaaaaa;
         }
 
-        /* Struktur List Bertumpuk Khas WhatsApp iPhone Settings */
         .ios-list-group {
             background: var(--ios-bg-card);
             border-radius: 12px;
@@ -72,9 +69,7 @@
         .ios-list-row:last-child {
             border-bottom: none;
         }
-        .ios-label {
-            font-weight: 500;
-        }
+        .ios-label { font-weight: 500; }
         .ios-value {
             color: var(--ios-text-secondary);
             font-size: 14px;
@@ -84,53 +79,62 @@
             outline: none;
             padding: 0;
         }
-        .ios-value:focus {
-            color: var(--ios-text-primary);
-        }
 
-        /* iOS UISwitch Toggle Button Khas Apple */
         .ios-switch {
-            position: relative;
-            display: inline-block;
-            width: 51px;
-            height: 31px;
+            position: relative; display: inline-block; width: 51px; height: 31px;
         }
-        .ios-switch input { 
-            opacity: 0; width: 0; height: 0; 
-        }
+        .ios-switch input { opacity: 0; width: 0; height: 0; }
         .ios-slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
             background-color: #e9e9eb; transition: .3s; border-radius: 34px;
         }
-        [data-theme="dark"] .ios-slider {
-            background-color: #3a3a3c;
-        }
+        [data-theme="dark"] .ios-slider { background-color: #3a3a3c; }
         .ios-slider:before {
             position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
             background-color: white; transition: .3s; border-radius: 50%;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
-        input:checked + .ios-slider {
-            background-color: var(--ios-switch-on);
-        }
-        input:checked + .ios-slider:before {
-            transform: translateX(20px);
-        }
+        input:checked + .ios-slider { background-color: var(--ios-switch-on); }
+        input:checked + .ios-slider:before { transform: translateX(20px); }
 
-        /* Lightbox Fullscreen Gambar Profil */
+        /* Lightbox Layar Penuh (Mendukung Foto & Video) */
         .ios-lightbox {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9); z-index: 9999; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.95); z-index: 9999; align-items: center; justify-content: center;
         }
-        .ios-lightbox.active {
-            display: flex;
+        .ios-lightbox.active { display: flex; }
+        .ios-lightbox .lightbox-content-wrapper {
+            max-width: 90%; max-height: 85%; display: flex; align-items: center; justify-content: center;
         }
-        .ios-lightbox img {
-            max-width: 90%; max-height: 80%; border-radius: 12px; object-fit: contain;
+        .ios-lightbox img, .ios-lightbox video {
+            max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .ios-lightbox-close {
-            position: absolute; top: 24px; right: 24px; color: #fff; font-size: 28px; cursor: pointer; background: none; border: none;
+            position: absolute; top: 24px; right: 24px; color: #fff; font-size: 32px; cursor: pointer; background: none; border: none; outline: none; z-index: 10000;
         }
+
+        /* Desain Papan Keyboard Emoji Komplit ala WhatsApp iPhone */
+        .wa-emoji-panel {
+            display: none; position: absolute; bottom: 42px; left: 0; background: #f6f6f6;
+            border: 1px solid rgba(0,0,0,0.12); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 999; width: 310px; flex-direction: column; overflow: hidden; font-family: sans-serif;
+        }
+        [data-theme="dark"] .wa-emoji-panel { background: #2c2c2e; border-color: rgba(255,255,255,0.1); }
+        .wa-emoji-header-tabs {
+            display: flex; background: #ededed; border-bottom: 0.5px solid rgba(0,0,0,0.08); padding: 4px; overflow-x: auto; scrollbar-width: none; gap: 4px;
+        }
+        [data-theme="dark"] .wa-emoji-header-tabs { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+        .wa-emoji-tab-btn {
+            background: none; border: none; font-size: 15px; padding: 6px 8px; cursor: pointer; border-radius: 8px; transition: background 0.2s; flex-shrink: 0;
+        }
+        .wa-emoji-tab-btn.active { background: var(--ios-bg-card); }
+        .wa-emoji-grid-container {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; padding: 12px; max-height: 190px; overflow-y: auto; background: transparent;
+        }
+        .wa-emoji-item {
+            font-size: 22px; text-align: center; cursor: pointer; transition: transform 0.1s; user-select: none;
+        }
+        .wa-emoji-item:active { transform: scale(1.3); }
     </style>
 </head>
 <body>
@@ -146,11 +150,11 @@
         </nav>
 
         <main class="main-content">
-
             <section id="pane-home" class="tab-pane active">
                 <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; position: relative;">
-                    <div style="width: 38px; height: 38px; background: var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; flex-shrink: 0; cursor: pointer; overflow: hidden;" id="user-avatar-initials">
-                        U
+                    <div style="width: 38px; height: 38px; background: var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; flex-shrink: 0; cursor: pointer; overflow: hidden;">
+                        <span id="user-avatar-initials">U</span>
+                        <img id="view-input-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
                         <textarea id="input-post-text" placeholder="Bagikan tips keuangan atau cerita hari ini..." style="width: 100%; border: none; background: transparent; resize: none; outline: none; font-size: 14px; color: var(--text-primary); min-height: 54px; padding: 4px 0;"></textarea>
@@ -173,7 +177,7 @@
 
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; position: relative;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;" title="Lampirkan Foto">
+                                <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;" title="Lampirkan Foto/Video">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
                                     </svg>
@@ -202,8 +206,9 @@
 
                             <button id="btn-submit-post" class="btn-primary" style="padding: 6px 16px; font-size: 13px; margin: 0; background-color: var(--accent-blue);">Bagikan</button>
                             
-                            <div id="emoji-popover-panel" style="display: none; position: absolute; bottom: 30px; left: 24px; background: #ffffff; border: 1px solid rgba(0,0,0,0.1); padding: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 99; gap: 8px; grid-template-columns: repeat(6, 1fr); width: max-content;">
-                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💰</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">📈</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">📉</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">💳</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">💸</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">💵</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">👍</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">🔥</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">🙌</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">😊</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">💡</span><span style="cursor:pointer; font-size:18px;" class="emoji-opt">📌</span>
+                            <div id="emoji-popover-panel" class="wa-emoji-panel">
+                                <div class="wa-emoji-header-tabs" id="wa-emoji-tabs-bar"></div>
+                                <div class="wa-emoji-grid-container" id="wa-emoji-grid-render"></div>
                             </div>
                         </div>
                     </div>
@@ -216,17 +221,13 @@
                 <div class="balance-card">
                     <span class="card-label">Sisa Anggaran Bulan Ini</span>
                     <h1 id="total-monthly">Rp 0</h1>
-                    <p class="salary-info-sub">
-                        Total uang masuk sebesar <span id="label-salary-amount">Rp 0</span> dari gajian setiap tanggal <span id="label-salary-date">-</span>.
-                    </p>
+                    <p class="salary-info-sub">Total uang masuk sebesar <span id="label-salary-amount">Rp 0</span> dari gajian setiap tanggal <span id="label-salary-date">-</span>.</p>
                 </div>
 
                 <div class="card hero-card">
                     <h3>Analitik Kategori</h3>
                     <div class="hero-chart-layout">
-                        <div class="chart-container">
-                            <canvas id="expenseChart"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="expenseChart"></canvas></div>
                         <div style="flex: 1; display: flex; flex-direction: column;">
                             <div id="analytics-list" class="analytics-container"></div>
                             <div id="analytics-total-box" style="margin-top: auto; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
@@ -248,9 +249,7 @@
                             <div class="input-group">
                                 <label>Tanggal Gajian Setiap Bulan</label>
                                 <select id="input-tgl-gajian" required>
-                                    <script>
-                                        for(let i=1; i<=31; i++) document.write(`<option value="${i}">${i}</option>`);
-                                    </script>
+                                    <script>for(let i=1; i<=31; i++) document.write(`<option value="${i}">${i}</option>`);</script>
                                 </select>
                             </div>
                             <button type="submit" class="btn-primary" style="background-color: #34c759;">Simpan Aturan Gajian</button>
@@ -273,7 +272,7 @@
                                 <label>Catatan (Opsional)</label>
                                 <input type="text" id="input-note" placeholder="Beli ayam, bensin, dll">
                             </div>
-                            <form action="" onsubmit="return false;"><button type="submit" class="btn-primary">Simpan Pengeluaran</button></form>
+                            <button type="submit" class="btn-primary">Simpan Pengeluaran</button>
                         </form>
                     </div>
 
@@ -288,14 +287,13 @@
                                 </div>
                             </div>
                         </form>
-                        <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Daftar Kategori Aktif:</label>
                         <div id="category-manage-list"></div>
                     </div>
                 </div>
             </section>
 
             <section id="pane-history" class="tab-pane">
-                <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px; align-items: stretch;">
+                <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h3>Histori Pengeluaran</h3>
                         <div class="filters">
@@ -305,7 +303,7 @@
                             </select>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; scrollbar-width: none;">
+                    <div style="display: flex; gap: 8px; overflow-x: auto;">
                         <button type="button" id="btn-clear-day" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Hari Ini</button>
                         <button type="button" id="btn-clear-month" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Bulan Ini</button>
                         <button type="button" id="btn-clear-year" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Tahun Ini</button>
@@ -315,9 +313,8 @@
             </section>
             
             <section id="pane-profile" class="tab-pane" style="background: var(--ios-bg-group); padding: 16px; border-radius: 16px; min-height: 80vh;">
-                
                 <div class="ios-list-group" style="padding: 20px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                    <div style="position: relative; width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--ios-border); background: #ccc; cursor: pointer; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" id="container-profile-img">
+                    <div style="position: relative; width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--ios-border); background: #ccc; cursor: pointer; overflow: hidden;" id="container-profile-img">
                         <img id="view-profile-pic" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                         <div id="text-profile-fallback" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: #fff;">U</div>
                     </div>
@@ -326,49 +323,31 @@
                 </div>
 
                 <div class="ios-list-group">
-                    <div class="ios-list-row">
-                        <span class="ios-label">Email</span>
-                        <span id="profile-text-email" class="ios-value" style="user-select: text;">loading...</span>
-                    </div>
-                    <div class="ios-list-row">
-                        <span class="ios-label">No Telephone</span>
-                        <input type="tel" id="profile-input-phone" class="ios-value" placeholder="Isi nomor telepon" style="width: 60%;">
-                    </div>
+                    <div class="ios-list-row"><span class="ios-label">Email</span><span id="profile-text-email" class="ios-value">loading...</span></div>
+                    <div class="ios-list-row"><span class="ios-label">No Telephone</span><input type="tel" id="profile-input-phone" class="ios-value" placeholder="Isi nomor telepon" style="width: 60%;"></div>
                     <div class="ios-list-row" style="flex-direction: column; align-items: stretch; gap: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" id="row-trigger-password">
-                            <span class="ios-label">Ganti Password</span>
-                            <span class="ios-value" style="color: var(--ios-accent); font-weight: 600;">Ubah</span>
+                            <span class="ios-label">Ganti Password</span><span class="ios-value" style="color: var(--ios-accent); font-weight: 600;">Ubah</span>
                         </div>
                         <div id="box-expanded-password" style="display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 0.5px solid var(--ios-border);">
-                            <input type="password" id="input-new-password" placeholder="Ketik Password Baru" style="width: 100%; padding: 8px 12px; font-size: 14px; border: 0.5px solid var(--ios-border); border-radius: 8px; outline: none; background: var(--ios-bg-group); color: var(--ios-text-primary);">
+                            <input type="password" id="input-new-password" placeholder="Ketik Password Baru" style="width: 100%; padding: 8px 12px; font-size: 14px; border: 0.5px solid var(--ios-border); border-radius: 8px; background: var(--ios-bg-group); color: var(--ios-text-primary);">
                             <button type="button" id="btn-save-password" style="background: var(--ios-accent); color: #fff; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Simpan Password Baru</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="ios-list-group">
-                    <div class="ios-list-row">
-                        <span class="ios-label">Tema Gelap</span>
-                        <label class="ios-switch">
-                            <input type="checkbox" id="toggle-ios-theme">
-                            <span class="ios-slider"></span>
-                        </label>
-                    </div>
+                    <div class="ios-list-row"><span class="ios-label">Tema Gelap</span><label class="ios-switch"><input type="checkbox" id="toggle-ios-theme"><span class="ios-slider"></span></label></div>
                 </div>
 
-                <div class="ios-list-group">
-                    <button type="button" id="btn-profile-logout" class="ios-list-row" style="width: 100%; justify-content: center; color: var(--ios-destructive); font-weight: bold; font-size: 16px; border: none; cursor: pointer;">
-                        Keluar
-                    </button>
-                </div>
+                <div class="ios-list-group"><button type="button" id="btn-profile-logout" class="ios-list-row" style="width: 100%; justify-content: center; color: var(--ios-destructive); font-weight: bold; font-size: 16px; border: none; cursor: pointer;">Keluar</button></div>
             </section>
-            
         </main>
     </div>
 
     <div id="ios-profile-lightbox" class="ios-lightbox">
         <button class="ios-lightbox-close" id="btn-close-lightbox">✕</button>
-        <img id="img-lightbox-target" src="">
+        <div class="lightbox-content-wrapper" id="ios-lightbox-inner-content"></div>
     </div>
 
     <div id="custom-confirm-modal" class="modal-overlay">
@@ -382,7 +361,6 @@
     </div>
 
     <div id="custom-toast-container" class="toast-container"></div>
-
     <script type="module" src="app.js"></script>
 </body>
 </html>
