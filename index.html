@@ -6,7 +6,6 @@
     <title>Dashboard - Catatan Keuangan</title>
     <link rel="stylesheet" href="style.css">
 
-    <!-- Proteksi Instan: Cek aturan login 1 minggu sebelum layar sempat dimuat -->
     <script>
         const loginTimestamp = localStorage.getItem('login_timestamp');
         const oneWeek = 7 * 24 * 60 * 60 * 1000; // Rentang waktu 1 minggu dalam milidetik
@@ -17,12 +16,10 @@
         }
     </script>
     
-    <!-- Library Chart.js untuk menggambar diagram lingkaran -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- NAVIGATION BAR: Menu Berjejer Baris Terkunci -->
         <nav class="navigation">
             <div class="nav-brand">Keuangan</div>
             <div class="nav-menu">
@@ -33,53 +30,89 @@
             <button id="btn-logout" class="btn-logout">Keluar</button>
         </nav>
 
-        <!-- KONTEN UTAMA APLIKASI -->
         <main class="main-content">
 
-            <!-- ================= TAB NEW: BERANDA SIKLUS SOSIAL (ALA THREADS) ================= -->
             <section id="pane-home" class="tab-pane active">
-                <!-- Bagian 1: Kotak Buat Postingan / Catatan Pemikiran Finansial Baru -->
-                <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px;">
+                <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; position: relative;">
                     <div style="width: 38px; height: 38px; background: var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; flex-shrink: 0;" id="user-avatar-initials">
                         U
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
                         <textarea id="input-post-text" placeholder="Bagikan tips keuangan atau cerita hari ini..." style="width: 100%; border: none; background: transparent; resize: none; outline: none; font-size: 14px; color: var(--text-primary); min-height: 54px; padding: 4px 0;"></textarea>
                         
-                        <!-- BARU: Pratinjau Lampiran Media Sebelum Unggah -->
-                        <div id="media-preview-container" style="display: none; position: relative; margin-top: 8px; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.02); max-height: 200px; width: fit-content;">
-                            <!-- Konten pratinjau disisipkan dinamis oleh JavaScript -->
+                        <div id="media-preview-container" style="display: none; position: relative; margin-top: 4px; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.02); max-height: 200px; width: fit-content;"></div>
+
+                        <div id="poll-creator-container" style="display: none; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 10px; flex-direction: column; gap: 8px; margin-top: 4px;">
+                            <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Buat Polling Jajak Pendapat:</span>
+                            <div id="poll-options-inputs" style="display: flex; flex-direction: column; gap: 6px;">
+                                </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                <button type="button" id="btn-poll-add-option" style="background: none; border: none; color: var(--accent-blue); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0;">+ Tambah Pilihan</button>
+                                <button type="button" id="btn-poll-cancel" style="background: none; border: none; color: var(--accent-red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0;">Batalkan</button>
+                            </div>
                         </div>
 
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <!-- BARU: Tombol Lampiran Media Vektor SVG Khas iOS -->
-                            <div style="display: flex; align-items: center;">
-                                <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; padding: 4px; border-radius: 50%; transition: background 0.2s;" title="Lampirkan Foto atau Video">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                        <polyline points="21 15 16 10 5 21"></polyline>
+                        <div id="location-selected-badge" style="display: none; align-items: center; gap: 4px; font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-top: 2px;">
+                            <span>📍</span> <span id="text-location-badge">Nama Lokasi</span>
+                            <button type="button" id="btn-remove-location" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 10px; padding: 0 4px;">✕</button>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;" title="Lampirkan Foto">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
                                     </svg>
                                 </label>
-                                <input type="file" id="input-post-media" accept="image/*,video/*" style="display: none;">
-                                <span id="label-media-status" style="font-size: 11px; color: var(--text-secondary); margin-left: 6px; font-weight: 500;"></span>
+                                <input type="file" id="input-post-media" accept="image/*" style="display: none;">
+
+                                <button type="button" id="btn-trigger-emoji" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Sisipkan Emoji">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                    </svg>
+                                </button>
+
+                                <button type="button" id="btn-trigger-poll" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Buat Polling">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>
+                                    </svg>
+                                </button>
+
+                                <button type="button" id="btn-trigger-location" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Bagikan Lokasi">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                </button>
+
+                                <span id="label-media-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 500;"></span>
                             </div>
 
                             <button id="btn-submit-post" class="btn-primary" style="padding: 6px 16px; font-size: 13px; margin: 0; background-color: var(--accent-blue);">Bagikan</button>
+                            
+                            <div id="emoji-popover-panel" style="display: none; position: absolute; bottom: 30px; left: 24px; background: #ffffff; border: 1px solid rgba(0,0,0,0.1); padding: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 99; gap: 8px; grid-template-columns: repeat(6, 1fr); width: max-content;">
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💰</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">📈</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">📉</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💳</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💸</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💵</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">👍</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">🔥</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">🙌</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">😊</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">💡</span>
+                                <span style="cursor:pointer; font-size:18px;" class="emoji-opt">📌</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bagian 2: Aliran Linimasa Sosial / Feed Postingan -->
                 <div id="feed-container" style="display: flex; flex-direction: column; gap: 12px;">
-                    <!-- Diisi dinamis dari Firebase lewat app.js -->
-                </div>
+                    </div>
             </section>
             
-            <!-- ================= TAB 1: DASHBOARD & INPUT ================= -->
             <section id="pane-dash" class="tab-pane">
                 
-                <!-- Kartu Sisa Anggaran Bulanan (Gaya Premium Fintech Rata Tengah) -->
                 <div class="balance-card">
                     <span class="card-label">Sisa Anggaran Bulan Ini</span>
                     <h1 id="total-monthly">Rp 0</h1>
@@ -88,20 +121,14 @@
                     </p>
                 </div>
 
-                <!-- HERO CONTAINER: Analitik Kategori Membentang Penuh -->
                 <div class="card hero-card">
                     <h3>Analitik Kategori</h3>
                     <div class="hero-chart-layout">
-                        <!-- Sisi Kiri: Tempat Diagram Lingkaran -->
                         <div class="chart-container">
                             <canvas id="expenseChart"></canvas>
                         </div>
-                        <!-- Sisi Kanan: Daftar Progress Bar Kategori -->
                         <div style="flex: 1; display: flex; flex-direction: column;">
-                            <div id="analytics-list" class="analytics-container">
-                                <!-- Baris teks analitik kemajuan diisi oleh app.js -->
-                            </div>
-                            <!-- Wadah Tempat Menampilkan Total Rupiah Pengeluaran Bulan Ini -->
+                            <div id="analytics-list" class="analytics-container"></div>
                             <div id="analytics-total-box" style="margin-top: auto; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
                                 <span style="color: var(--text-secondary); font-weight: 500;">Total Pengeluaran Bulan Ini:</span>
                                 <span id="analytics-grand-total" style="font-weight: 700; color: var(--accent-red); font-size: 16px;">Rp 0</span>
@@ -110,10 +137,7 @@
                     </div>
                 </div>
 
-                <!-- GRID BAWAH: Tempat 3 Formulir Input Saling Berjejer Seimbang (Bisa di-drag) -->
                 <div class="dashboard-grid" id="drag-grid-container">
-                    
-                    <!-- Form 1: Pengaturan Uang Gajian Bulanan -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Atur Gajian Bulanan</h3>
                         <form id="salary-form">
@@ -136,7 +160,6 @@
                         </form>
                     </div>
 
-                    <!-- Form 2: Catat Transaksi Belanja/Pengeluaran -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Catat Transaksi</h3>
                         <form id="transaction-form">
@@ -146,9 +169,7 @@
                             </div>
                             <div class="input-group">
                                 <label>Kategori</label>
-                                <select id="input-category" required>
-                                    <!-- Diisi dinamis oleh JavaScript -->
-                                </select>
+                                <select id="input-category" required></select>
                             </div>
                             <div class="input-group">
                                 <label>Catatan (Opsional)</label>
@@ -158,7 +179,6 @@
                         </form>
                     </div>
 
-                    <!-- Form 3: Kelola Kategori Mandiri -->
                     <div class="card draggable-card" draggable="true">
                         <h3>Kelola Kategori</h3>
                         <form id="category-form" style="margin-bottom: 15px; flex-grow: 0;">
@@ -173,11 +193,9 @@
                         <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Daftar Kategori Aktif:</label>
                         <div id="category-manage-list"></div>
                     </div>
-                    
                 </div>
             </section>
 
-            <!-- ================= TAB 2: HISTORI LENGKAP ================= -->
             <section id="pane-history" class="tab-pane">
                 <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -185,37 +203,22 @@
                         <div class="filters">
                             <select id="filter-year"></select>
                             <select id="filter-month">
-                                <option value="01">Januari</option>
-                                <option value="02">Februari</option>
-                                <option value="03">Maret</option>
-                                <option value="04">April</option>
-                                <option value="05">Mei</option>
-                                <option value="06">Juni</option>
-                                <option value="07">Juli</option>
-                                <option value="08">Agustus</option>
-                                <option value="09">September</option>
-                                <option value="10">Oktober</option>
-                                <option value="11">November</option>
-                                <option value="12">Desember</option>
+                                <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
                             </select>
                         </div>
                     </div>
-
-                    <!-- Panel Tombol Hapus Massal Berjejer Rapi Satu Baris -->
                     <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding-bottom: 4px; scrollbar-width: none;">
                         <button type="button" id="btn-clear-day" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Hari Ini</button>
                         <button type="button" id="btn-clear-month" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Bulan Ini</button>
                         <button type="button" id="btn-clear-year" class="btn-logout" style="font-size: 11px; padding: 6px 10px;">Hapus Tahun Ini</button>
                     </div>
                 </div>
-
                 <div id="history-list"></div>
             </section>
             
         </main>
     </div>
 
-    <!-- STRUKTUR POPUP MODAL KONFIRMASI KUSTOM -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <p id="modal-message">Apakah Anda yakin?</p>
@@ -226,7 +229,6 @@
         </div>
     </div>
 
-    <!-- STRUKTUR WADAH UNTUK NOTIFIKASI TOAST MELAYANG -->
     <div id="custom-toast-container" class="toast-container"></div>
 
     <script type="module" src="app.js"></script>
