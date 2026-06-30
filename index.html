@@ -6,7 +6,6 @@
     <title>Dashboard - Catatan Keuangan</title>
     <link rel="stylesheet" href="style.css">
 
-    <!-- Proteksi Instan: Cek aturan login 1 minggu sebelum layar sempat dimuat -->
     <script>
         const loginTimestamp = localStorage.getItem('login_timestamp');
         const oneWeek = 7 * 24 * 60 * 60 * 1000; 
@@ -22,7 +21,6 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- GAYA KUSTOM: Komponen Gaya iOS iPhone Layout & Fitur Baru -->
     <style>
         :root {
             --ios-bg-group: #f2f2f7;
@@ -52,22 +50,26 @@
             --text-secondary: #aaaaaa;
         }
 
-        /* Responsive Layout untuk PC (Beranda Sampingan) */
         .beranda-desktop-layout {
             display: flex; gap: 20px; width: 100%; align-items: flex-start;
         }
         .linimasa-utama { flex: 1; display: flex; flex-direction: column; }
         
         .pc-chat-sidebar {
-            width: 260px; background: var(--ios-bg-card); border-radius: 14px; padding: 16px;
+            width: 280px; background: var(--ios-bg-card); border-radius: 14px; padding: 16px;
             border: 0.5px solid var(--ios-border); position: sticky; top: 84px; display: none; flex-direction: column; gap: 12px;
         }
         @media (min-width: 850px) { .pc-chat-sidebar { display: flex; } }
 
         .sidebar-chat-item {
-            display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; transition: background 0.2s;
+            display: flex; align-items: center; justify-content: space-between; padding: 10px; border-radius: 10px; cursor: pointer; transition: background 0.2s;
         }
         .sidebar-chat-item:hover { background: rgba(0,0,0,0.04); }
+
+        .ios-notification-badge {
+            background: var(--ios-destructive); color: #ffffff; font-size: 11px; font-weight: 700;
+            padding: 2px 6px; border-radius: 10px; min-width: 10px; text-align: center; line-height: 12px;
+        }
 
         .ios-list-group {
             background: var(--ios-bg-card); border-radius: 12px; margin-bottom: 20px; overflow: hidden; border: 0.5px solid var(--ios-border);
@@ -93,7 +95,6 @@
         input:checked + .ios-slider { background-color: var(--ios-switch-on); }
         input:checked + .ios-slider:before { transform: translateX(20px); }
 
-        /* Notifikasi Banner ala iOS / WhatsApp di Atas Layar */
         .wa-popup-notification-banner {
             position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
             width: 92%; max-width: 420px; background: var(--ios-bg-card);
@@ -105,22 +106,14 @@
         }
         .wa-popup-notification-banner.show { top: 16px; }
 
-        /* Objek Grid Media Sosial Cerdas (iOS Style Center Crop) */
         .grid-media-container {
             display: grid; gap: 4px; margin-top: 10px; border-radius: 12px; overflow: hidden; width: 100%; border: 0.5px solid var(--ios-border);
         }
         .grid-media-item {
             position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; cursor: pointer; background: var(--ios-bg-group);
         }
-        .grid-media-item img {
-            width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; transition: opacity 0.2s ease;
-        }
-        .grid-media-item:active img { opacity: 0.8; }
-        .grid-media-blur-overlay {
-            position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-            display: flex; align-items: center; justify-content: center;
-            color: #ffffff; font-size: 20px; font-weight: 600; letter-spacing: -0.2px;
+        .grid-media-item img, .grid-media-item video {
+            width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
         }
 
         .ios-lightbox {
@@ -128,25 +121,21 @@
         }
         .ios-lightbox.active { display: flex; }
         .ios-lightbox .lightbox-content-wrapper {
-            max-width: 85%; max-height: 85%; display: flex; align-items: center; justify-content: center; position: relative; pointer-events: auto;
+            max-width: 85%; max-height: 85%; display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .ios-lightbox img {
-            max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.5); user-select: none; pointer-events: auto;
+        .ios-lightbox img, .ios-lightbox video {
+            max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .ios-lightbox-close {
             position: absolute; top: 24px; right: 24px; color: #fff; font-size: 32px; cursor: pointer; background: none; border: none; outline: none; z-index: 10000;
         }
 
-        .lightbox-nav-btn {
-            position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 24px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10001; transition: background 0.2s; outline: none;
+        /* Note 3: Proteksi CSS Utama Aksi Aset & Kunci Dimensi Agar Ikon Tidak Gepeng */
+        .feed-action-btn {
+            background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0; flex-shrink: 0 !important;
         }
-        .lightbox-nav-btn:hover { background: rgba(255,255,255,0.4); }
-        .lightbox-prev-btn { left: -60px; }
-        .lightbox-next-btn { right: -60px; }
-        
-        @media (max-width: 768px) {
-            .lightbox-nav-btn { display: none !important; }
-            .ios-lightbox .lightbox-content-wrapper { max-width: 95%; }
+        .feed-action-btn svg {
+            flex-shrink: 0 !important; display: block !important; width: 19px !important; height: 19px !important; min-width: 19px !important; min-height: 19px !important; box-sizing: border-box;
         }
 
         .composer-image-grid {
@@ -155,7 +144,7 @@
         .composer-img-item {
             position: relative; width: 70px; height: 70px; border-radius: 6px; overflow: hidden; border: 0.5px solid var(--ios-border);
         }
-        .composer-img-item img { width: 100%; height: 100%; object-fit: cover; }
+        .composer-img-item img, .composer-img-item video { width: 100%; height: 100%; object-fit: cover; }
 
         .wa-emoji-panel {
             display: none; position: absolute; bottom: 42px; left: 0; background: #f6f6f6; border: 1px solid rgba(0,0,0,0.12); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 999; width: 310px; flex-direction: column; overflow: hidden;
@@ -191,14 +180,6 @@
         .msg-bubble.sent { background: #dcf8c6; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; }
         [data-theme="dark"] .msg-bubble.sent { background: #0b6623; color: #fff; }
         .msg-bubble.received { background: var(--ios-bg-card); color: var(--ios-text-primary); align-self: flex-start; border-bottom-left-radius: 4px; border: 0.5px solid var(--ios-border); }
-        
-        .profile-popup-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 950; align-items: center; justify-content: center;
-        }
-        .profile-popup-overlay.active { display: flex; }
-        .profile-wa-card {
-            background: var(--ios-bg-card); width: 290px; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 20px 16px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        }
     </style>
 </head>
 <body>
@@ -214,19 +195,18 @@
         </nav>
 
         <main class="main-content">
-            <!-- ================= TAB: BERANDA SIKLUS SOSIAL ================= -->
             <section id="pane-home" class="tab-pane active">
                 <div class="beranda-desktop-layout">
                     
-                    <!-- Kolom Linimasa Utama (Kiri) -->
                     <div class="linimasa-utama">
                         <div class="card" style="padding: 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; position: relative;">
-                            <div style="width: 38px; height: 38px; background: var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; flex-shrink: 0; cursor: pointer; overflow: hidden; position: relative;">
-                                <span id="user-avatar-initials-text">U</span>
+                            <div style="width: 38px; height: 38px; background: var(--text-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; flex-shrink: 0; cursor: pointer; overflow: hidden; position: relative;" id="btn-home-own-avatar-trigger">
+                                <span id="user-avatar-initials">U</span>
                                 <img id="view-input-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                             </div>
                             <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
                                 <textarea id="input-post-text" placeholder="Bagikan tips keuangan atau cerita hari ini..." style="width: 100%; border: none; background: transparent; resize: none; outline: none; font-size: 14px; color: var(--text-primary); min-height: 54px; padding: 4px 0;"></textarea>
+                                
                                 <div id="media-preview-container" class="composer-image-grid" style="display: none;"></div>
 
                                 <div id="poll-creator-container" style="display: none; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 10px; flex-direction: column; gap: 8px; margin-top: 4px;">
@@ -245,30 +225,30 @@
 
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; position: relative;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;" title="Lampirkan Foto/Gambar (Max 10)">
+                                        <label for="input-post-media" style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center;" title="Lampirkan Foto/Video (Max 10)">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
                                             </svg>
                                         </label>
-                                        <input type="file" id="input-post-media" accept="image/*" multiple style="display: none;">
+                                        <input type="file" id="input-post-media" accept="image/*,video/*" multiple style="display: none;">
 
                                         <button type="button" id="btn-trigger-emoji" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Sisipkan Emoji">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line>
                                             </svg>
-                                        </label>
+                                        </button>
 
                                         <button type="button" id="btn-trigger-poll" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Buat Polling">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>
                                             </svg>
-                                        </label>
+                                        </button>
 
                                         <button type="button" id="btn-trigger-location" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 0;" title="Bagikan Lokasi">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
                                             </svg>
-                                        </label>
+                                        </button>
                                         <span id="label-media-status" style="font-size: 11px; color: var(--text-secondary); font-weight: 500;"></span>
                                     </div>
 
@@ -285,7 +265,6 @@
                         <div id="feed-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
                     </div>
 
-                    <!-- WIDGET PESAN PC/LAPTOP SIDEBAR (Kanan) -->
                     <div class="pc-chat-sidebar">
                         <h4 style="font-size: 13px; font-weight: 600; color: var(--ios-text-secondary); text-transform: uppercase; letter-spacing: -0.1px; margin-bottom: 4px;">Kontak Obrolan</h4>
                         <div id="pc-sidebar-users-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto;"></div>
@@ -293,13 +272,35 @@
 
                 </div>
             </section>
+
+            <section id="pane-user-profile" class="tab-pane" style="background: var(--ios-bg-group); padding: 16px; border-radius: 16px; min-height: 80vh;">
+                <div class="chat-header-ios" style="background: var(--ios-bg-card); border-radius: 12px; margin-bottom: 12px; padding: 12px 16px;">
+                    <button id="btn-close-full-profile" style="background:none; border:none; color:var(--ios-accent); font-size:15px; font-weight:600; cursor:pointer; padding:0;">‹ Kembali ke Beranda</button>
+                </div>
+                <div class="ios-list-group" style="padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                    <div style="width: 100px; height: 100px; border-radius: 50%; border: 1px solid var(--ios-border); background: #ccc; overflow: hidden;" id="target-full-avatar-box"></div>
+                    <h2 id="target-full-username" style="font-size: 19px; font-weight: 600; margin: 0; color: var(--ios-text-primary);">@username</h2>
+                    <span id="target-full-status-sub" style="font-size: 12px; color: var(--ios-text-secondary);">Offline</span>
+                </div>
+                <div class="ios-list-group">
+                    <div class="ios-list-row"><span class="ios-label">Email</span><span id="target-full-email" class="ios-value">-</span></div>
+                    <div class="ios-list-row"><span class="ios-label">No Telephone</span><span id="target-full-phone" class="ios-value">-</span></div>
+                </div>
+                <div style="padding: 0 4px;">
+                    <button id="btn-target-full-start-chat" class="btn-primary" style="background-color: var(--ios-accent); width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14.5px;">Kirim Pesan</button>
+                </div>
+            </section>
             
-            <!-- ================= TAB: DASHBOARD & INPUT ================= -->
             <section id="pane-dash" class="tab-pane">
                 <div class="balance-card">
                     <span class="card-label">Sisa Anggaran Bulan Ini</span>
                     <h1 id="total-monthly">Rp 0</h1>
                     <p class="salary-info-sub">Total uang masuk sebesar <span id="label-salary-amount">Rp 0</span> dari gajian setiap tanggal <span id="label-salary-date">-</span>.</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 12px; font-weight: 600; color: var(--ios-text-secondary); text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 8px; padding-left: 4px;">Sisa Anggaran Per Kategori</h4>
+                    <div id="dash-categories-balance-list" class="ios-list-group" style="margin-bottom: 0;"></div>
                 </div>
 
                 <div class="card hero-card">
@@ -343,8 +344,10 @@
                                 <input type="text" id="input-nominal" placeholder="Contoh: 50.000" required>
                             </div>
                             <div class="input-group">
-                                <label>Kategori</label>
-                                <select id="input-category" required></select>
+                                <label>Kategori (Alokasi Budget)</label>
+                                <select id="input-category" required>
+                                    <option value="Lain-lain">Lain-lain</option>
+                                </select>
                             </div>
                             <div class="input-group">
                                 <label>Catatan (Opsional)</label>
@@ -355,12 +358,13 @@
                     </div>
 
                     <div class="card draggable-card" draggable="true">
-                        <h3>Kelola Kategori</h3>
+                        <h3>Kelola & Set Alokasi Budget</h3>
                         <form id="category-form" style="margin-bottom: 15px; flex-grow: 0;">
                             <div class="input-group">
-                                <label>Tambah Kategori Baru</label>
+                                <label>Tambah Kategori Budget Baru</label>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="text" id="input-new-category" placeholder="Contoh: Tabungan" required style="flex: 1;">
+                                    <input type="text" id="input-new-category" placeholder="Contoh: Masak" required style="flex: 1;">
+                                    <input type="text" id="input-new-category-budget" placeholder="Limit Rp" required style="width: 40%;">
                                     <button type="submit" class="btn-primary" style="width: auto; padding: 0 15px; margin: 0;">+</button>
                                 </div>
                             </div>
@@ -370,7 +374,6 @@
                 </div>
             </section>
 
-            <!-- ================= TAB: HISTORI LENGKAP ================= -->
             <section id="pane-history" class="tab-pane">
                 <div class="history-filter-bar" style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -391,7 +394,6 @@
                 <div id="history-list"></div>
             </section>
             
-            <!-- ================= TAB: PROFIL IPHONE WHATSAPP STYLE ================= -->
             <section id="pane-profile" class="tab-pane" style="background: var(--ios-bg-group); padding: 16px; border-radius: 16px; min-height: 80vh;">
                 <div class="ios-list-group" style="padding: 20px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
                     <div style="position: relative; width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--ios-border); background: #ccc; cursor: pointer; overflow: hidden;" id="container-profile-img">
@@ -425,21 +427,6 @@
         </main>
     </div>
 
-    <!-- POPUP PROFILE PENGGUNA LAIN (WHATSAPP CARD STYLE) -->
-    <div id="wa-profile-popup-modal" class="profile-popup-overlay">
-        <div class="profile-wa-card">
-            <div style="width: 90px; height: 90px; border-radius: 50%; overflow: hidden; background: #ccc; cursor: pointer;" id="wa-popup-avatar-box">
-                <img id="wa-popup-avatar-img" src="" style="width:100%; height:100%; object-fit:cover;">
-            </div>
-            <h2 id="wa-popup-username" style="font-size: 18px; font-weight: 600; margin-top: 12px; color:var(--ios-text-primary);">Nama Pengguna</h2>
-            <p id="wa-popup-status-text" style="font-size: 12px; color: var(--ios-text-secondary); margin-top: 4px; margin-bottom: 16px;">Status Kehadiran</p>
-            
-            <button id="btn-wa-start-chat" class="btn-primary" style="background-color: var(--ios-accent); margin-bottom: 8px;">Kirim Pesan</button>
-            <button id="btn-wa-close-popup" style="background: none; border: none; color: var(--ios-text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; padding: 4px;">Tutup</button>
-        </div>
-    </div>
-
-    <!-- JENDELA LIVE CHAT ROOM DIRECT MESSAGE -->
     <div id="ios-chat-overlay-window" class="chat-overlay-window">
         <div class="chat-header-ios">
             <button id="btn-chat-back-to-app" style="background:none; border:none; color:var(--ios-accent); font-size:24px; cursor:pointer; padding: 0 8px 0 0;">‹</button>
@@ -456,7 +443,6 @@
         </div>
     </div>
 
-    <!-- Elemen Banner Notifikasi Pop-up Masuk -->
     <div id="wa-incoming-notification-popup" class="wa-popup-notification-banner">
         <div id="wa-notif-avatar-zone" style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #ccc; flex-shrink: 0;"></div>
         <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 2px;">
@@ -465,12 +451,9 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP LIGHTBOX UNIVERSAL (Mendukung Multi Swipe dan Klik Area Kosong) -->
     <div id="ios-profile-lightbox" class="ios-lightbox">
         <button class="ios-lightbox-close" id="btn-close-lightbox">✕</button>
-        <button class="lightbox-nav-btn lightbox-prev-btn" id="btn-lightbox-prev">‹</button>
         <div class="lightbox-content-wrapper" id="ios-lightbox-inner-content"></div>
-        <button class="lightbox-nav-btn lightbox-next-btn" id="btn-lightbox-next">›</button>
     </div>
 
     <div id="custom-confirm-modal" class="modal-overlay">
