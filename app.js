@@ -93,12 +93,22 @@ function setupFormatRupiah(elementId) {
 if (tabs) {
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            tab.classList.add('active'); document.getElementById(tab.id.replace('nav', 'pane')).classList.add('active');
-            if (tab.id === 'nav-home') { document.getElementById('ios-header-title').innerText = "Beranda"; }
-            else if (tab.id === 'nav-budget') { document.getElementById('ios-header-title').innerText = "Budget"; }
-            else if (tab.id === 'nav-social') { document.getElementById('ios-header-title').innerText = "Komunitas Utas"; }
-            else if (tab.id === 'nav-profile') { document.getElementById('ios-header-title').innerText = "Profil"; }
+            tabs.forEach(t => t.classList.remove('active')); 
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            
+            tab.classList.add('active'); 
+            
+            const targetPane = document.getElementById(tab.id.replace('nav', 'pane'));
+            if (targetPane) targetPane.classList.add('active');
+            
+            // PROTEKSI: Cek apakah elemen header title ada sebelum mengubah teksnya
+            const headerTitle = document.getElementById('ios-header-title');
+            if (headerTitle) {
+                if (tab.id === 'nav-home') { headerTitle.innerText = "Beranda"; }
+                else if (tab.id === 'nav-dash') { headerTitle.innerText = "Dashboard"; }
+                else if (tab.id === 'nav-history') { headerTitle.innerText = "Histori"; }
+                else if (tab.id === 'nav-profile') { headerTitle.innerText = "Profil"; }
+            }
         });
     });
 }
@@ -729,11 +739,60 @@ function updateCalculatedDOMBalances(totalExpense, categoryTotals) {
 }
 
 function renderAnalytics(totals, grandTotal) {
-    const container = document.getElementById('analytics-list'); if (!container) return; container.innerHTML = "";
-    if (grandTotal === 0) { if (expenseChartInstance) { expenseChartInstance.destroy(); expenseChartInstance = null; } return; }
-    if (expenseChartInstance) expenseChartInstance.destroy(); const ctx = document.getElementById('expenseChart');
-    if (ctx) { expenseChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(totals), datasets: [{ data: Object.values(totals), backgroundColor: ['#ff9500', '#ff2d55', '#5ac8fa', '#5856d6', '#34c759', '#ffcc00', '#8e8e93'].slice(0, Object.keys(totals).length), borderWidth: 0, borderRadius: 16, spacing: 6, cutout: '75%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, usePointStyle: true, pointStyle: 'circle' } } } } }); }
-    for (let cat in totals) { let pct = ((totals[cat] / grandTotal) * 100).toFixed(0); container.innerHTML += `<div class="analytics-item"><div class="analytics-labels"><span>${cat}</span><b>Rp ${totals[cat].toLocaleString('id-ID')} (${pct}%)</b></div><div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div></div>`; }
+    const container = document.getElementById('analytics-list'); 
+    if (!container) return; 
+    container.innerHTML = "";
+    
+    if (grandTotal === 0) { 
+        if (expenseChartInstance) { 
+            expenseChartInstance.destroy(); 
+            expenseChartInstance = null; 
+        } 
+        return; 
+    }
+    
+    if (expenseChartInstance) expenseChartInstance.destroy(); 
+    
+    // PROTEKSI: Cari elemen kanvas secara presisi
+    const ctx = document.getElementById('expenseChart');
+    if (ctx) { 
+        try {
+            expenseChartInstance = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: Object.keys(totals), 
+                    datasets: [{ 
+                        data: Object.values(totals), 
+                        backgroundColor: ['#ff9500', '#ff2d55', '#5ac8fa', '#5856d6', '#34c759', '#ffcc00', '#8e8e93'].slice(0, Object.keys(totals).length), 
+                        borderWidth: 0, 
+                        borderRadius: 16, 
+                        spacing: 6, 
+                        cutout: '75%' 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'right', 
+                            labels: { boxWidth: 8, usePointStyle: true, pointStyle: 'circle' } 
+                        } 
+                    } 
+                } 
+            }); 
+        } catch (chartError) {
+            console.error("Gagal memuat visualisasi Chart.js: ", chartError);
+        }
+    } else {
+        console.warn("Peringatan: Elemen dengan id='expenseChart' tidak ditemukan pada tab HTML aktif.");
+    }
+    
+    // Loop untuk merender baris persentase teks di bawah/samping chart
+    for (let cat in totals) { 
+        let pct = ((totals[cat] / grandTotal) * 100).toFixed(0); 
+        container.innerHTML += `<div class="analytics-item"><div class="analytics-labels"><span>${cat}</span><b>Rp ${totals[cat].toLocaleString('id-ID')} (${pct}%)</b></div><div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div></div>`; 
+    }
 }
 
 function renderHistoryList(items) {
