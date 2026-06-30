@@ -694,22 +694,29 @@ function updateCalculatedDOMBalances(totalExpense, categoryTotals) {
     if (balanceListEl) {
         balanceListEl.innerHTML = activeCategories.map(c => {
             const used = categoryTotals[c.name] || 0; 
-            const allocated = c.allocatedBudget || 1; // Anti pembagian dengan nol
+            // PROTEKSI 1: Pastikan nominal alokasi budget selalu dibaca angka (jika undefined, ganti jadi 0)
+            const allocated = parseInt(c.allocatedBudget) || 0; 
             const remainingBudget = allocated - used;
             
-            // Hitung persentase sisa riil dari limit anggaran
-            const pctRemaining = (remainingBudget / allocated) * 100;
+            // PROTEKSI 2: Hindari pembagian dengan angka 0 atau negatif agar persen tidak NaN / Infinity
+            const pctRemaining = allocated > 0 ? (remainingBudget / allocated) * 100 : 0;
             
-            let badgeColor = "var(--ios-switch-on)"; // Default hijau (di atas 50%)
+            let badgeColor = "var(--ios-switch-on)"; // Hijau (>= 50%)
             if (pctRemaining < 20) {
-                badgeColor = "var(--ios-destructive)"; // Merah di bawah 20%
+                badgeColor = "var(--ios-destructive)"; // Merah (< 20%)
             } else if (pctRemaining < 50) {
-                badgeColor = "var(--ios-warning)"; // Kuning/Oranye di bawah 50%
+                badgeColor = "var(--ios-warning)"; // Kuning (< 50%)
             }
 
-            return `<div class="ios-list-row" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--ios-border); font-size:14px;"><span class="ios-label" style="font-weight:500;">${c.name}</span><span class="ios-value" style="color:${badgeColor}; font-weight:600;">Rp ${remainingBudget.toLocaleString('id-ID')} (${pctRemaining.toFixed(0)}%)</span></div>`;
+            // PROTEKSI 3: Bungkus nilai nominal dengan toLocaleString yang aman
+            const formattedRemaining = typeof remainingBudget === 'number' ? remainingBudget.toLocaleString('id-ID') : '0';
+
+            return `<div class="ios-list-row" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--ios-border); font-size:14px;">
+                <span class="ios-label" style="font-weight:500;">${c.name || 'Tanpa Nama'}</span>
+                <span class="ios-value" style="color:${badgeColor}; font-weight:600;">Rp ${formattedRemaining} (${pctRemaining.toFixed(0)}%)</span>
+            </div>`;
         }).join('');
-    }
+}
 
     const manageListEl = document.getElementById('category-manage-list'); 
     if (manageListEl) { 
