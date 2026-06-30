@@ -19,7 +19,6 @@ const db = getFirestore(app);
 // DEKLARASI VARIABEL GLOBAL & SELEKTOR DOM
 // ==========================================
 const filterYear = document.getElementById('filter-yr');
-// FIX 1: ID disesuaikan dengan index.html bawaan kamu ('filter-mth') agar tidak bernilai null
 const filterMonth = document.getElementById('filter-mth');
 const tabs = document.querySelectorAll('.nav-item');
 
@@ -48,7 +47,7 @@ const waEmojiData = {
     "😀": ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕"],
     "🐱": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦅","🦉","🦤","🦚","🕊","🐇","🦝","🦨","🦡","🦫","🦥","🐺","🐴","🦄","🐝","🪱","🐛","🦋","🐌","🐞","🪰","🪲","🪳","🕸","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🐊","🐅","🐆","🦓","🦍","𚖗"],
     "🍏": ["🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🍅","🥑","🥦","🥬","🥒","🌶","🫑","🌽","🥕","🫒","🍄","🥜","🫘","🌰","🍞","🥐","🥖","🫓","🥯","🥞","🧇","🧀","🍖","🍗","🥩","🍔","🍟","🍕","🌭","🥪","🌮","🌯","🫔","🍳","🥘","🍲","🥣","🥗","🍿","🥩","🧂","🥫","🍱","🍘","🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🥮","🍡","🥟","🦪","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫","🍬","🍭","🍮","🍯"],
-    "⚽": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🏓","🏸","🏒","🏑","🥍","🥅","⛳","🪁","🏹","🎣","🤿","🥊","🥋","🎽","skateboard","🛼","🛷","🥌","🎿","🏂","🪂","🏋️‍♂️","🤼‍♂️","🤸‍♂️","⛹️‍♂️","🤾‍♂️","🏌️‍♂️","🏇","🧘‍♂️","🏄‍♂️","🏊‍♂️","🤽‍♂️","🚣‍♂️","🧗‍♂️","🚵‍♂️","🚴‍♂️","🏆","🥇","🥈","🥉","🏅","🎖","🏵","🎫","🎟","🎭","🖼","🎨","🎬","🎤","🎧","🎼","🎹","🥁","🪗","🎸","🎲","♟","🎯","🎳","🎮","🎰","🧩"],
+    "⚽": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🏓","🏸","🏒","🏑","🥍","🥅","⛳","🪁","🏹","🎣","🤿","🥊","🥋","🎽","skateboard","🛼","𛷖","🥌","🎿","🏂","🪂","🏋️‍♂️","🤼‍♂️","🤸‍♂️","⛹️‍♂️","🤾‍♂️","🏌️‍♂️","🏇","🧘‍♂️","SURF","🎽","🤽‍♂️","🚣‍♂️","🧗‍♂️","𚩘","🚴‍♂️","🏆","🥇","🥈","🥉","🏅","🎖","🏵","🎫","🎟","🎭","🖼","🎨","🎬","🎤","🎧","🎼","🎹","🥁","🪗","🎸","🎲","♟","🎯","🎳","🎮","🎰","🧩"],
     "🚗": ["🚗","🚕","🚙","🚌","𚖖","🏎","警察","ambulans","🦽","𛲟","🚚","🚛","🚜","🦯","🦽","𚖗"," scooters","🚲","🛵","MUTIL","🛺","🚨","🚔","🚍","🚘","𚖗","𚖘","🚃","🇲🇲","🚞","🎚","🎛","🚄","🚅","🚈","🚂","🚆","🚇","🚊","🚉","✈️","🛫","🛬","🛩","💺","🚀","🛸","🚁","🛶","⛵","🛥","🛳","𛟟","🚢","⚓","🪝","⛽","🚧","🗺","🗿","🗽","🗼","🏰","🏯","🏟","🎡","🎢","Carousel","🎠"]
 };
 
@@ -91,14 +90,15 @@ function setupFormatRupiah(elementId) {
     if (el) { el.addEventListener('input', (e) => { let value = e.target.value.replace(/\D/g, ""); e.target.value = value ? parseInt(value).toLocaleString('id-ID') : ""; }); }
 }
 
-// ==========================================
-// NAVIGATION TAB SYSTEM INTERACTION
-// ==========================================
 if (tabs) {
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
             tab.classList.add('active'); document.getElementById(tab.id.replace('nav', 'pane')).classList.add('active');
+            if (tab.id === 'nav-home') { document.getElementById('ios-header-title').innerText = "Beranda"; }
+            else if (tab.id === 'nav-budget') { document.getElementById('ios-header-title').innerText = "Budget"; }
+            else if (tab.id === 'nav-social') { document.getElementById('ios-header-title').innerText = "Komunitas Utas"; }
+            else if (tab.id === 'nav-profile') { document.getElementById('ios-header-title').innerText = "Profil"; }
         });
     });
 }
@@ -174,7 +174,24 @@ function listenToIncomingMessagesGlobal() {
             }
         });
         renderPcSidebarContacts();
+        // FIX NOTES 4: Trigger update hitungan angka merah di tabbar mobile setiap ada snapshot masuk
+        updateMobileGlobalUnreadBadge();
     });
+}
+
+// FIX NOTES 4: Fungsi penghitung total unread untuk di-render di atas menu obrolan/utas mobile bawah
+function updateMobileGlobalUnreadBadge() {
+    const mobileCounterEl = document.getElementById('mobile-global-unread-counter');
+    if (!mobileCounterEl) return;
+    let totalUnread = 0;
+    Object.values(unreadChatsCountMap).forEach(count => { totalUnread += count; });
+    
+    if (totalUnread > 0) {
+        mobileCounterEl.innerText = totalUnread > 99 ? "99+" : totalUnread;
+        mobileCounterEl.style.display = "flex";
+    } else {
+        mobileCounterEl.style.display = "none";
+    }
 }
 
 function triggerWhatsAppStyleNotificationBanner(senderUid, messageText) {
@@ -231,12 +248,12 @@ window.openWaUserProfileCard = (userId) => {
     
     btnChat.onclick = () => {
         document.getElementById('pane-user-profile').classList.remove('active'); document.getElementById('pane-home').classList.add('active'); document.getElementById('nav-home').classList.add('active');
-        unreadChatsCountMap[userId] = 0; renderPcSidebarContacts(); window.openDirectMessageChatRoom(userId, targetName, avatarSrc);
+        unreadChatsCountMap[userId] = 0; renderPcSidebarContacts(); updateMobileGlobalUnreadBadge(); window.openDirectMessageChatRoom(userId, targetName, avatarSrc);
     };
 };
 
 window.openDirectMessageChatRoom = (targetUid, targetName, avatarSrc) => {
-    activeChatTargetId = targetUid; unreadChatsCountMap[targetUid] = 0; renderPcSidebarContacts();
+    activeChatTargetId = targetUid; unreadChatsCountMap[targetUid] = 0; renderPcSidebarContacts(); updateMobileGlobalUnreadBadge();
     const windowOverlay = document.getElementById('ios-chat-overlay-window'); const titleEl = document.getElementById('chat-header-title-name'); const statusEl = document.getElementById('chat-header-status-sub'); const avatarBox = document.getElementById('chat-header-avatar-box');
     titleEl.innerText = targetName;
     avatarBox.innerHTML = avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="width:100%; height:100%; background:#c7c7cc; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px;">${targetName.charAt(1).toUpperCase()}</div>`;
@@ -529,7 +546,6 @@ if (btnResetSalary) {
     }); 
 }
 
-// FIX 2: Perbaikan Penanganan Tanggal & Pemicu Sinkronisasi
 const txForm = document.getElementById('transaction-form'); 
 if (txForm) { 
     txForm.addEventListener('submit', async (e) => { 
@@ -551,7 +567,6 @@ if (txForm) {
             category = "Lain-lain"; 
         } 
         
-        // Simpan dalam format angka murni tanggal (Ymd) agar lolos filter live calculations bawaan kamu
         const today = new Date();
         const dateStringYmd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
@@ -561,7 +576,7 @@ if (txForm) {
                 nominal: parseInt(rawNominal), 
                 category: category, 
                 note: note, 
-                date: parseInt(dateStringYmd), // Disimpan sebagai Integer Ymd
+                date: parseInt(dateStringYmd), 
                 time: `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`, 
                 createdAt: today.getTime() 
             }); 
@@ -582,9 +597,33 @@ if (txForm) {
 const categoryForm = document.getElementById('category-form');
 if (categoryForm) {
     categoryForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); const newCatName = document.getElementById('input-new-category').value.trim(); const rawBudget = document.getElementById('input-new-category-budget').value.replace(/\./g, "");
-        if (activeCategories.some(c => c.name.toLowerCase() === newCatName.toLowerCase())) { showCustomToast("Kategori Budget sudah ada!"); return; }
-        try { await addDoc(collection(db, "categories"), { userId: currentUserId, name: newCatName, allocatedBudget: parseInt(rawBudget), createdAt: new Date().getTime() }); document.getElementById('input-new-category').value = ""; document.getElementById('input-new-category-budget').value = ""; } catch (err) { console.error(err); }
+        e.preventDefault(); 
+        const newCatName = document.getElementById('input-new-category').value.trim(); 
+        const rawBudget = document.getElementById('input-new-category-budget').value.replace(/\./g, "");
+        const inputAllocatedAmount = parseInt(rawBudget) || 0;
+
+        if (activeCategories.some(c => c.name.toLowerCase() === newCatName.toLowerCase())) { 
+            showCustomToast("Kategori Budget sudah ada!"); 
+            return; 
+        }
+
+        // FIX NOTES 2: Validasi agar total gabungan seluruh limit budget kategori tidak melebihi isi pendapatan bulanan
+        let totalCurrentAllocated = 0;
+        activeCategories.forEach(c => { totalCurrentAllocated += (c.allocatedBudget || 0); });
+        
+        if ((totalCurrentAllocated + inputAllocatedAmount) > userSalaryConfig.amount) {
+            showCustomToast("Gagal! Total alokasi budget (" + (totalCurrentAllocated + inputAllocatedAmount).toLocaleString('id-ID') + ") melebihi Gaji Bulanan Anda (" + userSalaryConfig.amount.toLocaleString('id-ID') + ").");
+            return;
+        }
+
+        try { 
+            await addDoc(collection(db, "categories"), { userId: currentUserId, name: newCatName, allocatedBudget: inputAllocatedAmount, createdAt: new Date().getTime() }); 
+            document.getElementById('input-new-category').value = ""; 
+            document.getElementById('input-new-category-budget').value = ""; 
+            showCustomToast("Kategori budget ditambahkan!");
+        } catch (err) { 
+            console.error(err); 
+        }
     });
 }
 
@@ -602,7 +641,6 @@ function listenToCategories() {
         
         const selectEl = document.getElementById('input-category'); 
         if (selectEl) {
-            // FIX 3: Tambahkan opsi default 'Lain-lain' saat dropdown kategori masih kosong agar form tidak mogok tervalidasi HTML5
             if (activeCategories.length === 0) {
                 selectEl.innerHTML = `<option value="Lain-lain">Lain-lain</option>`;
             } else {
@@ -648,14 +686,28 @@ function triggerLiveCalculations(year, month) {
 
 function updateCalculatedDOMBalances(totalExpense, categoryTotals) {
     let sisaGajiUtama = userSalaryConfig.amount - totalExpense;
-    if (document.getElementById('total-monthly')) { document.getElementById('total-monthly').innerText = `Rp ${sisaGajiUtama.toLocaleString('id-ID')}`; document.getElementById('total-monthly').style.color = sisaGajiUtama < 0 ? "var(--accent-red)" : "inherit"; }
+    if (document.getElementById('total-monthly')) { document.getElementById('total-monthly').innerText = `Rp ${sisaGajiUtama.toLocaleString('id-ID')}`; document.getElementById('total-monthly').style.color = sisaGajiUtama < 0 ? "var(--ios-destructive)" : "inherit"; }
     if (document.getElementById('analytics-grand-total')) document.getElementById('analytics-grand-total').innerText = `Rp ${totalExpense.toLocaleString('id-ID')}`;
     
+    // FIX NOTES 3: Kalkulasi presentase sisa anggaran dengan warna indikator lalu lintas (Hijau, Kuning, Merah)
     const balanceListEl = document.getElementById('dash-categories-balance-list');
     if (balanceListEl) {
         balanceListEl.innerHTML = activeCategories.map(c => {
-            const used = categoryTotals[c.name] || 0; const allocated = c.allocatedBudget || 0; const remainingBudget = allocated - used;
-            return `<div class="ios-list-row"><span class="ios-label">${c.name}</span><span class="ios-value" style="color:${remainingBudget < 0 ? 'var(--ios-destructive)':'var(--ios-switch-on)'}; font-weight:600;">Rp ${remainingBudget.toLocaleString('id-ID')} / Rp ${allocated.toLocaleString('id-ID')}</span></div>`;
+            const used = categoryTotals[c.name] || 0; 
+            const allocated = c.allocatedBudget || 1; // Anti pembagian dengan nol
+            const remainingBudget = allocated - used;
+            
+            // Hitung persentase sisa riil dari limit anggaran
+            const pctRemaining = (remainingBudget / allocated) * 100;
+            
+            let badgeColor = "var(--ios-switch-on)"; // Default hijau (di atas 50%)
+            if (pctRemaining < 20) {
+                badgeColor = "var(--ios-destructive)"; // Merah di bawah 20%
+            } else if (pctRemaining < 50) {
+                badgeColor = "var(--ios-warning)"; // Kuning/Oranye di bawah 50%
+            }
+
+            return `<div class="ios-list-row" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--ios-border); font-size:14px;"><span class="ios-label" style="font-weight:500;">${c.name}</span><span class="ios-value" style="color:${badgeColor}; font-weight:600;">Rp ${remainingBudget.toLocaleString('id-ID')} (${pctRemaining.toFixed(0)}%)</span></div>`;
         }).join('');
     }
 
@@ -663,7 +715,7 @@ function updateCalculatedDOMBalances(totalExpense, categoryTotals) {
     if (manageListEl) { 
         manageListEl.innerHTML = activeCategories.map(c => {
             const used = categoryTotals[c.name] || 0; const allocated = c.allocatedBudget || 0; const remainingBudget = allocated - used;
-            return `<div style="display:flex; flex-direction:column; background:var(--ios-bg-group); padding:10px; margin-bottom:6px; border-radius:10px; font-size:13px;"><div style="display:flex; justify-content:space-between; font-weight:600;"><span>${c.name}</span><button type="button" onclick="window.deleteCategory('${c.id}')" style="background:none; border:none; color:var(--ios-destructive); cursor:pointer; font-weight:600;">Hapus</button></div><div style="display:flex; justify-content:space-between; margin-top:4px; font-size:12px; color:var(--ios-text-secondary);"><span>Limit: Rp ${allocated.toLocaleString('id-ID')}</span><span>Sisa: <b style="color:${remainingBudget < 0 ? 'var(--ios-destructive)':'var(--ios-switch-on)'}">Rp ${remainingBudget.toLocaleString('id-ID')}</b></span></div></div>`;
+            return `<div style="display:flex; flex-direction:column; background:var(--ios-bg-group); padding:10px; margin-bottom:6px; border-radius:10px; font-size:13px;"><div style="display:flex; justify-content:space-between; font-weight:600;"><span>${c.name}</span><button type="button" onclick="window.deleteCategory('${c.id}')" style="background:none; border:none; color:var(--ios-destructive); cursor:pointer; font-weight:600;">Hapus</button></div><div style="display:flex; justify-content:space-between; margin-top:4px; font-size:12px; color:var(--ios-text-secondary);"><span>Limit: Rp ${allocated.toLocaleString('id-ID')}</span><span>Sisa: <b>Rp ${remainingBudget.toLocaleString('id-ID')}</b></span></div></div>`;
         }).join('');
     }
     renderAnalytics(categoryTotals, totalExpense);
@@ -685,12 +737,11 @@ function renderHistoryList(items) {
         groups[item.date].push(item); 
     });
     for (let date in groups) {
-        // Mengubah string angka Ymd kembali ke format tanggal lokal (Leluhur string slice)
         const dateStr = date.toString();
         const formattedDate = new Date(`${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`);
-        let groupHtml = `<div class="day-group"><div class="day-title">${formattedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}</div>`;
+        let groupHtml = `<div class="day-group"><div class="day-title" style="padding:6px 12px; font-size:12px; font-weight:600; color:#8e8e93; background:rgba(0,0,0,0.02); text-transform:uppercase;">${formattedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}</div>`;
         groups[date].forEach(item => { 
-            groupHtml += `<div class="history-item"><div class="item-info"><p>${item.category}</p><span>[${item.time || '--:--'}] • ${item.note || 'Tanpa Catatan'}</span></div><div class="item-amount"><span>Rp ${item.nominal.toLocaleString('id-ID')}</span><button class="btn-delete" onclick="window.deleteTx('${item.id}')">Hapus</button></div></div>`; 
+            groupHtml += `<div class="history-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--ios-border);"><div class="item-info"><p style="font-size:14px; font-weight:600;">${item.category}</p><span style="font-size:12px; color:#8e8e93;">[${item.time || '--:--'}] • ${item.note || 'Tanpa Catatan'}</span></div><div class="item-amount" style="display:flex; align-items:center; gap:12px;"><span style="font-size:14px; font-weight:600; color:var(--ios-destructive);">Rp ${item.nominal.toLocaleString('id-ID')}</span><button class="btn-delete" onclick="window.deleteTx('${item.id}')" style="background:none; border:none; color:var(--ios-destructive); font-size:12px; cursor:pointer;">Hapus</button></div></div>`; 
         }); 
         container.innerHTML += groupHtml + `</div>`;
     }
@@ -713,11 +764,6 @@ function setupBulkDeleteListeners() {
         const start = parseInt(`${document.getElementById('filter-yr').value}${String(document.getElementById('filter-mth').value).padStart(2, '0')}01`);
         const end = parseInt(`${document.getElementById('filter-yr').value}${String(document.getElementById('filter-mth').value).padStart(2, '0')}${String(maxDays).padStart(2, '0')}`);
         deleteBatchByQuery(start, end, "Hapus pengeluaran bulan ini?"); 
-    });
-    document.getElementById('btn-clear-year')?.addEventListener('click', () => { 
-        const start = parseInt(`${document.getElementById('filter-yr').value}0101`);
-        const end = parseInt(`${document.getElementById('filter-yr').value}1231`);
-        deleteBatchByQuery(start, end, "Hapus pengeluaran tahun ini?"); 
     });
 }
 
